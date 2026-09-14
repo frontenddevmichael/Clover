@@ -390,6 +390,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   content: {
     padding: theme.spacing[5],
+    paddingBottom: theme.spacing[30],
   },
   // Join section
   joinSection: {

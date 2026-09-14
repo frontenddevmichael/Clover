@@ -14,6 +14,8 @@ export default function TabsLayout() {
       <Tabs.Screen name="deadlines" options={{ title: 'Deadlines' }} />
       <Tabs.Screen name="social" options={{ title: 'Course Rooms' }} />
       <Tabs.Screen name="assistant" options={{ title: 'Assistant' }} />
+      {/* Courses is a pushed screen, not a dock destination */}
+      <Tabs.Screen name="courses" options={{ href: null }} />
       {/* Reachable only via the header ProfileButton — not a dock destination */}
       <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>

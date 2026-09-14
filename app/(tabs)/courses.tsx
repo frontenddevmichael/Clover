@@ -1,5 +1,5 @@
 // Courses screen — all data from Convex, no hardcoded content
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
@@ -22,6 +23,7 @@ import Svg, { Path } from 'react-native-svg';
 export default function CoursesScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
+  const params = useLocalSearchParams<{ compose?: string }>();
   const COURSE_TAG_COLORS = t.colors.courseTags;
   const { userId } = useAuth();
   const [showForm, setShowForm] = useState(false);
@@ -29,6 +31,13 @@ export default function CoursesScreen() {
   const [code, setCode] = useState('');
   const [title, setTitle] = useState('');
   const [selectedColor, setSelectedColor] = useState<string>(COURSE_TAG_COLORS[0]);
+
+  // Open form when center button sends compose param
+  useEffect(() => {
+    if (params.compose === '1') {
+      setShowForm(true);
+    }
+  }, [params.compose]);
 
   const courses = useQuery(api.courses.listByUser, userId ? { userId } : 'skip');
   const sessions = useQuery(api.sessions.listByUser, userId ? { userId } : 'skip');

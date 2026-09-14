@@ -486,7 +486,7 @@ function makeStyles(t: ReturnType<typeof useTheme>) {
       justifyContent: 'space-between',
       alignItems: 'flex-start',
       paddingHorizontal: t.spacing[5],
-      paddingTop: t.spacing[12],
+      paddingTop: t.spacing[2],
       paddingBottom: t.spacing[3],
     },
     headerLeft: { flex: 1 },

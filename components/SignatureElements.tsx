@@ -69,7 +69,8 @@ export function GreetingBanner({ name }: { name: string }) {
         alignItems: 'center',
         gap: t.spacing[3],
         paddingHorizontal: t.spacing[5],
-        paddingVertical: t.spacing[3],
+        paddingTop: t.spacing[12],
+        paddingBottom: t.spacing[1],
       }}
     >
       <CloverMark size={28} color={t.colors.ink} />

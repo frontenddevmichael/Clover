@@ -263,6 +263,9 @@ function getCenterSpec(pathname: string): CenterSpec {
   if (pathname.includes('/assistant')) {
     return { label: 'Generate new plan', Icon: AskIcon, route: '/(tabs)/assistant', params: { action: 'new-plan' } };
   }
+  if (pathname.includes('/courses')) {
+    return { label: 'Add course', Icon: PlusIcon, route: '/(tabs)/courses', params: { compose: '1' } };
+  }
   return { label: 'Add session', Icon: PlusIcon, route: '/session/create' };
 }
 
@@ -416,11 +419,9 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   wrap: {
     position: 'relative',
-    marginHorizontal: theme.spacing[3],
   },
   dock: {
     height: 64,
-    borderRadius: DOCK_RADIUS,
     overflow: 'hidden',
   },
   dockSolid: {
@@ -456,7 +457,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   centerHit: {
     position: 'absolute',
     left: '50%',
-    top: -16,
+    top: -20,
     width: TAP,
     height: TAP,
     marginLeft: -TAP / 2,
@@ -464,13 +465,12 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   centerBtn: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.fill, // inverts per scheme — always the highest-contrast surface
+    backgroundColor: theme.colors.fill,
     alignItems: 'center',
     justifyContent: 'center',
-    // Same top-light the glass implies — soft, single light source
     shadowColor: theme.colors.neutral950,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
