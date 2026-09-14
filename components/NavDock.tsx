@@ -1,14 +1,15 @@
-// Navigation dock — Dark bar with organic center hill.
-// Solid dark full-width bar. A curved "hill" rises from the center to
-// cradle the + action button. White icons on dark. Active tab gets a
-// subtle bright indicator.
+// Navigation dock — White bar with black center hill.
+// Matches the reference: white/light bar, black organic hill rising from
+// center for the + button, dark icons with labels underneath, wavy
+// underline for active state.
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, Dimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps,
   withTiming,
   Easing,
   interpolate,
@@ -16,21 +17,21 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
-import { motion, colors as baseColors } from '@/lib/tokens';
+import { motion } from '@/lib/tokens';
 import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { useAuth } from '@/lib/auth';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-const TAP = 44;
+const TAP = 48;
 const MORPH_MS = motion.duration;
 const SOFT_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
-const BAR_HEIGHT = 60;
-const HILL_HEIGHT = 28; // how far the center hill rises above the bar
-const HILL_WIDTH = 120; // width of the hill curve
+const BAR_HEIGHT = 64;
+const HILL_HEIGHT = 30;
+const HILL_WIDTH = 130;
 
-// ─── Workload classification ───
+// ─── Workload ───
 type WorkloadLevel = 'light' | 'balanced' | 'heavy' | 'overloaded';
 function useWorkloadLevel(): WorkloadLevel {
   const { userId } = useAuth();
@@ -39,7 +40,6 @@ function useWorkloadLevel(): WorkloadLevel {
     api.deadlines.listUpcoming,
     userId ? { userId, fromDate: new Date().toISOString().split('T')[0] } : 'skip'
   );
-
   return useMemo<WorkloadLevel>(() => {
     const today = new Date().getDay();
     const mins = (sessions ?? []).reduce((sum: number, s: any) => {
@@ -59,53 +59,57 @@ function useWorkloadLevel(): WorkloadLevel {
   }, [sessions, deadlines]);
 }
 
-// ─── Icons (white on dark) ───
-const STROKE_ACTIVE = 2;
-const STROKE_IDLE = 1.5;
+// ─── Icons (dark on white bar) ───
+const SW_ACTIVE = 2;
+const SW_IDLE = 1.6;
 
 function HomeIcon({ active }: { active: boolean }) {
-  const sw = active ? STROKE_ACTIVE : STROKE_IDLE;
+  const sw = active ? SW_ACTIVE : SW_IDLE;
+  const color = active ? '#1A1A1A' : '#6B7280';
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
-      <Path d="M4 11 L12 4 L20 11 V20 H4 Z" stroke="white" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <Path d="M10 20 V14 H14 V20" stroke="white" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M4 11 L12 4 L20 11 V20 H4 Z" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M10 20 V14 H14 V20" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
 }
 
 function FlagIcon({ active }: { active: boolean }) {
-  const sw = active ? STROKE_ACTIVE : STROKE_IDLE;
+  const sw = active ? SW_ACTIVE : SW_IDLE;
+  const color = active ? '#1A1A1A' : '#6B7280';
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
-      <Line x1="6" y1="3" x2="6" y2="21" stroke="white" strokeWidth={sw} strokeLinecap="round" />
-      <Path d="M6 4 H17 L14.5 7.5 L17 11 H6" stroke="white" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Line x1="6" y1="3" x2="6" y2="21" stroke={color} strokeWidth={sw} strokeLinecap="round" />
+      <Path d="M6 4 H17 L14.5 7.5 L17 11 H6" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
 }
 
 function RoomsIcon({ active }: { active: boolean }) {
-  const sw = active ? STROKE_ACTIVE : STROKE_IDLE;
+  const sw = active ? SW_ACTIVE : SW_IDLE;
+  const color = active ? '#1A1A1A' : '#6B7280';
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
-      <Circle cx="8" cy="8.5" r="3" stroke="white" strokeWidth={sw} fill="none" />
-      <Circle cx="16" cy="8.5" r="3" stroke="white" strokeWidth={sw} fill="none" />
-      <Path d="M3 19 C3 15.5 5.5 13.5 8 13.5 C10.5 13.5 13 15.5 13 19" stroke="white" strokeWidth={sw} strokeLinecap="round" fill="none" />
-      <Path d="M13.5 13.8 C16 13.8 18.5 15.8 18.5 19" stroke="white" strokeWidth={sw} strokeLinecap="round" fill="none" />
+      <Circle cx="8" cy="8.5" r="3" stroke={color} strokeWidth={sw} fill="none" />
+      <Circle cx="16" cy="8.5" r="3" stroke={color} strokeWidth={sw} fill="none" />
+      <Path d="M3 19 C3 15.5 5.5 13.5 8 13.5 C10.5 13.5 13 15.5 13 19" stroke={color} strokeWidth={sw} strokeLinecap="round" fill="none" />
+      <Path d="M13.5 13.8 C16 13.8 18.5 15.8 18.5 19" stroke={color} strokeWidth={sw} strokeLinecap="round" fill="none" />
     </Svg>
   );
 }
 
 function AssistantIcon({ active }: { active: boolean }) {
-  const sw = active ? STROKE_ACTIVE : STROKE_IDLE;
+  const sw = active ? SW_ACTIVE : SW_IDLE;
+  const color = active ? '#1A1A1A' : '#6B7280';
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
-      <Path d="M12 3 L14 9 L20 11 L14 13 L12 19 L10 13 L4 11 L10 9 Z" stroke="white" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <Circle cx="18.5" cy="5.5" r="1" fill="white" />
+      <Path d="M12 3 L14 9 L20 11 L14 13 L12 19 L10 13 L4 11 L10 9 Z" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Circle cx="18.5" cy="5.5" r="1" fill={color} />
     </Svg>
   );
 }
 
-// Center action icons (white on dark bg)
+// Center icons (white on black hill)
 function PlusIcon() {
   return (
     <Svg viewBox="0 0 24 24" width={26} height={26}>
@@ -159,6 +163,42 @@ function getCenterSpec(pathname: string) {
   return { label: 'Add session', Icon: PlusIcon, route: '/session/create' };
 }
 
+// ─── Wavy underline for active tab ───
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const WAVE_LEN = 36;
+
+function SketchUnderline({ active, reduced }: { active: boolean; reduced: boolean }) {
+  const progress = useSharedValue(active ? 1 : 0);
+  useEffect(() => {
+    if (active) {
+      progress.value = reduced
+        ? 1
+        : withTiming(1, { duration: 340, easing: Easing.bezier(0.2, 0.9, 0.3, 1) });
+    } else {
+      progress.value = reduced ? 0 : withTiming(0, { duration: 140, easing: Easing.in(Easing.cubic) });
+    }
+  }, [active, reduced]);
+
+  const props = useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(progress.value, [0, 1], [WAVE_LEN, 0]),
+    opacity: progress.value,
+  }));
+
+  return (
+    <Svg viewBox="0 0 28 6" width={28} height={6} style={{ marginTop: 1 }}>
+      <AnimatedPath
+        d="M 2 3.5 C 7 2.2, 12 4.1, 17 2.8 S 23.5 3.4, 26 3"
+        stroke="#1A1A1A"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        fill="none"
+        strokeDasharray={WAVE_LEN}
+        animatedProps={props}
+      />
+    </Svg>
+  );
+}
+
 // ─── The dock ───
 export default function NavDock() {
   const router = useRouter();
@@ -189,87 +229,80 @@ export default function NavDock() {
     opacity: 0.3 + 0.7 * morph.value,
   }));
 
-  // Active indicator glow
-  const activeIdx = TABS.findIndex((tab) => tab.key === activeKey);
-
   return (
-    <View style={[styles.outer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      {/* The dark bar with center hill */}
+    <View style={[styles.outer, { paddingBottom: Math.max(insets.bottom, 6) }]}>
       <View style={styles.barContainer}>
+        {/* Black hill SVG — sits above the white bar */}
         <Svg
-          viewBox={`0 0 ${SCREEN_W} ${BAR_HEIGHT + HILL_HEIGHT}`}
+          viewBox={`0 0 ${SCREEN_W} ${HILL_HEIGHT + 10}`}
           width={SCREEN_W}
-          height={BAR_HEIGHT + HILL_HEIGHT}
-          style={styles.barSvg}
+          height={HILL_HEIGHT + 10}
+          style={styles.hillSvg}
         >
-          {/* Main bar shape with center hill */}
           <Path
             d={`
-              M 0 ${HILL_HEIGHT}
-              L 0 ${HILL_HEIGHT + BAR_HEIGHT}
-              L ${SCREEN_W} ${HILL_HEIGHT + BAR_HEIGHT}
-              L ${SCREEN_W} ${HILL_HEIGHT}
-              Q ${SCREEN_W * 0.65} ${HILL_HEIGHT}, ${SCREEN_W * 0.5 + HILL_WIDTH / 2} ${HILL_HEIGHT}
-              Q ${SCREEN_W * 0.5 + HILL_WIDTH / 4} ${HILL_HEIGHT - HILL_HEIGHT * 0.8}, ${SCREEN_W * 0.5} ${HILL_HEIGHT - HILL_HEIGHT}
-              Q ${SCREEN_W * 0.5 - HILL_WIDTH / 4} ${HILL_HEIGHT - HILL_HEIGHT * 0.8}, ${SCREEN_W * 0.5 - HILL_WIDTH / 2} ${HILL_HEIGHT}
-              Q ${SCREEN_W * 0.35} ${HILL_HEIGHT}, 0 ${HILL_HEIGHT}
+              M ${SCREEN_W * 0.5 - HILL_WIDTH / 2} ${HILL_HEIGHT + 8}
+              Q ${SCREEN_W * 0.5 - HILL_WIDTH / 2} ${HILL_HEIGHT - 12}, ${SCREEN_W * 0.5 - HILL_WIDTH / 4} ${2}
+              Q ${SCREEN_W * 0.5} ${-4}, ${SCREEN_W * 0.5 + HILL_WIDTH / 4} ${2}
+              Q ${SCREEN_W * 0.5 + HILL_WIDTH / 2} ${HILL_HEIGHT - 12}, ${SCREEN_W * 0.5 + HILL_WIDTH / 2} ${HILL_HEIGHT + 8}
+              Q ${SCREEN_W * 0.5} ${HILL_HEIGHT + 4}, ${SCREEN_W * 0.5 - HILL_WIDTH / 2} ${HILL_HEIGHT + 8}
               Z
             `}
             fill="#1A1A1A"
           />
         </Svg>
 
-        {/* Icons row — sits inside the bar */}
-        <View style={styles.iconsRow}>
+        {/* White bar */}
+        <View style={styles.whiteBar}>
           {/* Left tabs */}
           <View style={styles.leftTabs}>
             {TABS.slice(0, 2).map((tab) => (
-              <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} />
+              <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} />
             ))}
           </View>
 
-          {/* Center button — sits in the hill */}
-          <Pressable
-            onPress={() =>
-              center.params
-                ? router.push({ pathname: center.route as never, params: center.params })
-                : router.push(center.route as never)
-            }
-            style={styles.centerHit}
-            accessibilityRole="button"
-            accessibilityLabel={center.label}
-          >
-            <View style={styles.centerBtn}>
-              <Animated.View style={morphStyle}>
-                <center.Icon />
-              </Animated.View>
-            </View>
-          </Pressable>
+          {/* Center button spacer */}
+          <View style={styles.centerSpacer} />
 
           {/* Right tabs */}
           <View style={styles.rightTabs}>
             {TABS.slice(2).map((tab) => (
-              <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} />
+              <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} />
             ))}
           </View>
         </View>
 
-        {/* Active indicator dot */}
-        {activeIdx >= 0 && (
-          <ActiveDot activeIdx={activeIdx} totalTabs={TABS.length} />
-        )}
+        {/* Center button — floats in the hill */}
+        <Pressable
+          onPress={() =>
+            center.params
+              ? router.push({ pathname: center.route as never, params: center.params })
+              : router.push(center.route as never)
+          }
+          style={styles.centerHit}
+          accessibilityRole="button"
+          accessibilityLabel={center.label}
+        >
+          <View style={styles.centerBtn}>
+            <Animated.View style={morphStyle}>
+              <center.Icon />
+            </Animated.View>
+          </View>
+        </Pressable>
       </View>
     </View>
   );
 }
 
-// ─── Tab icon ───
+// ─── Tab icon with label and wavy underline ───
 function TabIcon({
   tab,
   active,
+  reduced,
 }: {
   tab: (typeof TABS)[number];
   active: boolean;
+  reduced: boolean;
 }) {
   const router = useRouter();
   const styles = useStyles(makeStyles);
@@ -283,43 +316,9 @@ function TabIcon({
       accessibilityLabel={tab.label}
     >
       <tab.Icon active={active} />
-      {active && <View style={styles.activeDot} />}
+      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{tab.label}</Text>
+      <SketchUnderline active={active} reduced={reduced} />
     </TouchableOpacity>
-  );
-}
-
-// ─── Active indicator — small dot below the active icon ───
-function ActiveDot({ activeIdx, totalTabs }: { activeIdx: number; totalTabs: number }) {
-  const t = useTheme();
-  const styles = useStyles(makeStyles);
-  // Position: left half icons are 0,1; right half are 2,3
-  // Each half takes ~35% of screen width, centered
-  const halfW = SCREEN_W * 0.35;
-  const leftStart = SCREEN_W * 0.075;
-  const rightStart = SCREEN_W * 0.575;
-
-  const isInLeft = activeIdx < 2;
-  const posInHalf = isInLeft ? activeIdx : activeIdx - 2;
-  const x = (isInLeft ? leftStart : rightStart) + (halfW / 2) * posInHalf + halfW / 4;
-
-  const slideX = useSharedValue(x);
-  useEffect(() => {
-    slideX.value = withTiming(x, { duration: 260, easing: Easing.bezier(0.25, 0.1, 0.25, 1) });
-  }, [x]);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: slideX.value }],
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        styles.activeIndicator,
-        animStyle,
-      ]}
-    >
-      <View style={[styles.activeIndicatorDot, { backgroundColor: t.colors.fillInk }]} />
-    </Animated.View>
   );
 }
 
@@ -333,58 +332,75 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   barContainer: {
     position: 'relative',
   },
-  barSvg: {
+  hillSvg: {
     position: 'absolute',
     top: 0,
     left: 0,
+    zIndex: 2,
   },
-  iconsRow: {
+  whiteBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: BAR_HEIGHT + HILL_HEIGHT,
-    paddingHorizontal: theme.spacing[4],
+    height: BAR_HEIGHT,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: theme.spacing[2],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   leftTabs: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-end',
-    paddingBottom: theme.spacing[3],
+    paddingBottom: theme.spacing[2],
   },
   rightTabs: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-end',
-    paddingBottom: theme.spacing[3],
+    paddingBottom: theme.spacing[2],
+  },
+  centerSpacer: {
+    width: 60,
   },
   tabIcon: {
     alignItems: 'center',
     justifyContent: 'center',
     width: TAP,
-    height: TAP,
-    gap: 2,
+    gap: 1,
   },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'white',
-    marginTop: 2,
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    marginTop: 1,
+  },
+  tabLabelActive: {
+    color: '#1A1A1A',
+    fontWeight: '600',
   },
   centerHit: {
-    width: 60,
-    height: 60,
+    position: 'absolute',
+    left: '50%',
+    top: -8,
+    width: 56,
+    height: 56,
+    marginLeft: -28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: BAR_HEIGHT - 20,
     zIndex: 10,
   },
   centerBtn: {
     width: 52,
     height: 52,
     borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.fill,
+    backgroundColor: '#1A1A1A',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -392,15 +408,5 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
-  },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: theme.spacing[2] - 1,
-    marginLeft: -3,
-  },
-  activeIndicatorDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
 });
