@@ -28,8 +28,7 @@ const TAP = 48;
 const MORPH_MS = motion.duration;
 const SOFT_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
 const BAR_HEIGHT = 64;
-const HILL_HEIGHT = 30;
-const HILL_WIDTH = 130;
+const CUTOUT_RADIUS = 38; // radius of the circular cutout for the CTA
 
 // ─── Workload ───
 type WorkloadLevel = 'light' | 'balanced' | 'heavy' | 'overloaded';
@@ -232,28 +231,31 @@ export default function NavDock() {
   return (
     <View style={[styles.outer, { paddingBottom: Math.max(insets.bottom, 6) }]}>
       <View style={styles.barContainer}>
-        {/* Black hill SVG — sits above the white bar */}
+        {/* White bar with circular cutout at top center */}
         <Svg
-          viewBox={`0 0 ${SCREEN_W} ${HILL_HEIGHT + 10}`}
+          viewBox={`0 0 ${SCREEN_W} ${BAR_HEIGHT}`}
           width={SCREEN_W}
-          height={HILL_HEIGHT + 10}
-          style={styles.hillSvg}
+          height={BAR_HEIGHT}
+          style={styles.barSvg}
         >
           <Path
             d={`
-              M ${SCREEN_W * 0.5 - HILL_WIDTH / 2} ${HILL_HEIGHT + 8}
-              Q ${SCREEN_W * 0.5 - HILL_WIDTH / 2} ${HILL_HEIGHT - 12}, ${SCREEN_W * 0.5 - HILL_WIDTH / 4} ${2}
-              Q ${SCREEN_W * 0.5} ${-4}, ${SCREEN_W * 0.5 + HILL_WIDTH / 4} ${2}
-              Q ${SCREEN_W * 0.5 + HILL_WIDTH / 2} ${HILL_HEIGHT - 12}, ${SCREEN_W * 0.5 + HILL_WIDTH / 2} ${HILL_HEIGHT + 8}
-              Q ${SCREEN_W * 0.5} ${HILL_HEIGHT + 4}, ${SCREEN_W * 0.5 - HILL_WIDTH / 2} ${HILL_HEIGHT + 8}
+              M 0 16
+              Q 0 0, 16 0
+              L ${SCREEN_W * 0.5 - 38} 0
+              A 38 38 0 0 1 ${SCREEN_W * 0.5 + 38} 0
+              L ${SCREEN_W - 16} 0
+              Q ${SCREEN_W} 0, ${SCREEN_W} 16
+              L ${SCREEN_W} ${BAR_HEIGHT}
+              L 0 ${BAR_HEIGHT}
               Z
             `}
-            fill="#1A1A1A"
+            fill="white"
           />
         </Svg>
 
-        {/* White bar */}
-        <View style={styles.whiteBar}>
+        {/* Icons row */}
+        <View style={styles.iconsRow}>
           {/* Left tabs */}
           <View style={styles.leftTabs}>
             {TABS.slice(0, 2).map((tab) => (
@@ -261,7 +263,7 @@ export default function NavDock() {
             ))}
           </View>
 
-          {/* Center button spacer */}
+          {/* Center spacer — cutout area */}
           <View style={styles.centerSpacer} />
 
           {/* Right tabs */}
@@ -272,7 +274,7 @@ export default function NavDock() {
           </View>
         </View>
 
-        {/* Center button — floats in the hill */}
+        {/* Center button — suspended in the cutout */}
         <Pressable
           onPress={() =>
             center.params
@@ -332,25 +334,16 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   barContainer: {
     position: 'relative',
   },
-  hillSvg: {
+  barSvg: {
     position: 'absolute',
     top: 0,
     left: 0,
-    zIndex: 2,
   },
-  whiteBar: {
+  iconsRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     height: BAR_HEIGHT,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
     paddingHorizontal: theme.spacing[2],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 4,
   },
   leftTabs: {
     flex: 1,
@@ -367,7 +360,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     paddingBottom: theme.spacing[2],
   },
   centerSpacer: {
-    width: 60,
+    width: 76,
   },
   tabIcon: {
     alignItems: 'center',
@@ -388,7 +381,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   centerHit: {
     position: 'absolute',
     left: '50%',
-    top: -8,
+    top: -16,
     width: 56,
     height: 56,
     marginLeft: -28,
@@ -405,8 +398,8 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     elevation: 8,
   },
 });
