@@ -27,7 +27,7 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const TAP = 48;
 const MORPH_MS = motion.duration;
 const SOFT_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
-const BAR_HEIGHT = 76;
+const BAR_HEIGHT = 90;
 const CUTOUT_RADIUS = 36;
 const CUTOUT_CENTER_Y = 0; // top edge of the bar
 
