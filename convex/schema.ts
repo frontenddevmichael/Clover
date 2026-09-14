@@ -105,6 +105,17 @@ export default defineSchema({
     .index('by_user_course', ['userId', 'courseCode'])
     .index('by_course', ['courseCode']),
 
+  // ── Notification preferences (FR25–27) ──
+  notificationPreferences: defineTable({
+    userId: v.id('users'),
+    sessionReminders: v.boolean(),
+    deadlineReminders: v.boolean(),
+    sessionLeadMinutes: v.number(),
+    deadlineLeadHours: v.number(),
+    quietHoursStart: v.string(), // "HH:MM"
+    quietHoursEnd: v.string(), // "HH:MM"
+  }).index('by_user', ['userId']),
+
   // ── Auth sessions ──
   // The client stores only an opaque random token (SecureStore); the raw value
   // is never sent over the wire again — the server stores a SHA-256 hash of it

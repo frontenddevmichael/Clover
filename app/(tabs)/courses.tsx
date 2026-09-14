@@ -148,6 +148,8 @@ export default function CoursesScreen() {
         <EmptyState
           title="Your course list is empty"
           message="Add the courses you're taking this semester — each one gets its own color tag and sessions."
+          actionLabel="Add your first course"
+          onAction={() => setShowForm(true)}
         />
       ) : (
         <FlatList

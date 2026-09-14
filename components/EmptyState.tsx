@@ -46,7 +46,9 @@ export function EmptyState({ title, message, scene = 'calendar', actionLabel, on
           style={{
             marginTop: t.spacing[5],
             paddingHorizontal: t.spacing[5],
-            paddingVertical: t.spacing[2.5],
+            paddingVertical: t.spacing[3],
+            minHeight: 44,
+            justifyContent: 'center',
             borderRadius: t.radii.chip,
             backgroundColor: t.colors.fill,
           }}

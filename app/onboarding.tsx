@@ -27,6 +27,8 @@ import Animated, {
 import { CloverLogo } from '@/components/CloverLogo';
 import { useAuth } from '@/lib/auth';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
+import { useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
 
 const { width } = Dimensions.get('window');
 const SPRING_SNAPPY = { damping: 20, stiffness: 200, mass: 0.8 };
@@ -99,6 +101,7 @@ export default function OnboardingScreen() {
   const styles = useStyles(makeStyles);
   const router = useRouter();
   const { signup, login, userId } = useAuth();
+  const seedDemoData = useMutation(api.seed.seedDemoData);
 
   const [step, setStep] = useState<Step>('splash');
   const [email, setEmail] = useState('');
@@ -202,7 +205,7 @@ export default function OnboardingScreen() {
 
     setLoading(true);
     try {
-      await signup({
+      const newUserId = await signup({
         email: email.trim().toLowerCase(),
         name: name.trim(),
         institution: institution.trim(),
@@ -210,6 +213,8 @@ export default function OnboardingScreen() {
         level: parseInt(level, 10),
         passcode,
       });
+      // Seed realistic data so the app feels populated on first load
+      await seedDemoData({ userId: newUserId }).catch(() => {});
     } catch (e: any) {
       const msg = friendlyError(e.message || '');
       Alert.alert('Account creation failed', msg);

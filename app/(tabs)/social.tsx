@@ -281,27 +281,29 @@ export default function SocialScreen() {
             <Text style={styles.sheetSubtitle}>
               Choose which courses reveal your free time to course-mates.
             </Text>
-            {(!courses || courses.length === 0) && (
-              <Text style={styles.emptyText}>No courses yet — add courses first.</Text>
-            )}
-            {courses?.map((course: any) => (
-              <View key={course._id} style={styles.shareRow}>
-                <View>
-                  <Text style={styles.shareRowCode}>{course.code}</Text>
-                  <Text style={styles.shareRowTitle}>{course.title}</Text>
+            <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
+              {(!courses || courses.length === 0) && (
+                <Text style={styles.emptyText}>No courses yet — add courses first.</Text>
+              )}
+              {courses?.map((course: any) => (
+                <View key={course._id} style={styles.shareRow}>
+                  <View>
+                    <Text style={styles.shareRowCode}>{course.code}</Text>
+                    <Text style={styles.shareRowTitle}>{course.title}</Text>
+                  </View>
+                  <Switch
+                    value={userRoomMap[course.code]?.shareFreeTime ?? false}
+                    onValueChange={(val) => handleToggleShare(course.code, val)}
+                    trackColor={{
+                      false: t.colors.neutral200,
+                      true: t.colors.neutral500,
+                    }}
+                    thumbColor={t.colors.white}
+                    accessibilityLabel={`Share free time in ${course.code}`}
+                  />
                 </View>
-                <Switch
-                  value={userRoomMap[course.code]?.shareFreeTime ?? false}
-                  onValueChange={(val) => handleToggleShare(course.code, val)}
-                  trackColor={{
-                    false: t.colors.neutral200,
-                    true: t.colors.neutral500,
-                  }}
-                  thumbColor={t.colors.white}
-                  accessibilityLabel={`Share free time in ${course.code}`}
-                />
-              </View>
-            ))}
+              ))}
+            </ScrollView>
             <Button label="Done" onPress={() => setShareSheetOpen(false)} style={styles.sheetDone} />
           </Pressable>
         </Pressable>
@@ -374,6 +376,9 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   shareRowTitle: {
     fontSize: theme.typography.caption,
     color: theme.colors.inkSecondary,
+  },
+  sheetScroll: {
+    maxHeight: 300,
   },
   sheetDone: {
     marginTop: theme.spacing[5],

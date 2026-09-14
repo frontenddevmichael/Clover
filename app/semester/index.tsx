@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
@@ -18,6 +19,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { useAuth } from '@/lib/auth';
 
 export default function SemesterScreen() {
+  const router = useRouter();
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const { userId } = useAuth();
@@ -110,6 +112,11 @@ export default function SemesterScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
+            <Text style={styles.backBtnText}>Back</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.title}>Semester</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
@@ -249,6 +256,16 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     paddingHorizontal: theme.spacing[5],
     paddingTop: theme.spacing[12],
     paddingBottom: theme.spacing[4],
+  },
+  headerLeft: {
+    width: 60,
+  },
+  backBtn: {
+    paddingVertical: theme.spacing[1],
+  },
+  backBtnText: {
+    fontSize: theme.typography.secondary,
+    color: theme.colors.inkSecondary,
   },
   title: {
     fontSize: theme.typography.display,

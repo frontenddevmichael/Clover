@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -28,6 +29,7 @@ export default function SettingsScreen() {
   const notifPrefs = useQuery(api.notifications.getPreferences, userId ? { userId } : 'skip');
   const deleteAccount = useMutation(api.users.deleteAccount);
   const updateProfile = useMutation(api.users.updateProfile);
+  const saveNotifPrefs = useMutation(api.notifications.savePreferences);
 
   // ── Profile editing (FR2, FR3) ──
   const [name, setName] = useState('');
@@ -112,6 +114,25 @@ export default function SettingsScreen() {
     setSavingPasscode(false);
   };
 
+  // ── Notification preferences ──
+  const handleNotifPrefChange = async (key: string, value: any) => {
+    if (!userId) return;
+    const current = notifPrefs ?? {};
+    try {
+      await saveNotifPrefs({
+        userId,
+        sessionReminders: key === 'sessionReminders' ? value : (current as any).sessionReminders ?? true,
+        deadlineReminders: key === 'deadlineReminders' ? value : (current as any).deadlineReminders ?? true,
+        sessionLeadMinutes: key === 'sessionLeadMinutes' ? value : (current as any).sessionLeadMinutes ?? 15,
+        deadlineLeadHours: key === 'deadlineLeadHours' ? value : (current as any).deadlineLeadHours ?? 24,
+        quietHoursStart: (current as any).quietHoursStart ?? '22:00',
+        quietHoursEnd: (current as any).quietHoursEnd ?? '07:00',
+      });
+    } catch {
+      Alert.alert('Error', 'Failed to update notification settings.');
+    }
+  };
+
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete account',
@@ -144,7 +165,13 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
+            <Text style={styles.backBtnText}>Back</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.title}>Settings</Text>
+        <View style={styles.headerRight} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -261,19 +288,37 @@ export default function SettingsScreen() {
         <Card style={styles.card}>
           <View style={styles.row}>
             <Text style={styles.label}>Session reminders</Text>
-            <Text style={styles.value}>{notifPrefs?.sessionLeadMinutes ?? 15} min before</Text>
+            <Switch
+              value={notifPrefs?.sessionReminders ?? true}
+              onValueChange={(val) => handleNotifPrefChange('sessionReminders', val)}
+              trackColor={{ false: t.colors.neutral200, true: t.colors.neutral500 }}
+              thumbColor={t.colors.white}
+              accessibilityLabel="Session reminders"
+            />
           </View>
         </Card>
         <Card style={styles.card}>
           <View style={styles.row}>
             <Text style={styles.label}>Deadline reminders</Text>
-            <Text style={styles.value}>{notifPrefs?.deadlineLeadHours ?? 24}h before</Text>
+            <Switch
+              value={notifPrefs?.deadlineReminders ?? true}
+              onValueChange={(val) => handleNotifPrefChange('deadlineReminders', val)}
+              trackColor={{ false: t.colors.neutral200, true: t.colors.neutral500 }}
+              thumbColor={t.colors.white}
+              accessibilityLabel="Deadline reminders"
+            />
           </View>
         </Card>
         <Card style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>Quiet hours</Text>
-            <Text style={styles.value}>{notifPrefs?.quietHoursStart ?? '10 PM'} – {notifPrefs?.quietHoursEnd ?? '7 AM'}</Text>
+            <Text style={styles.label}>Session lead time</Text>
+            <Text style={styles.value}>{notifPrefs?.sessionLeadMinutes ?? 15} min</Text>
+          </View>
+        </Card>
+        <Card style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Deadline lead time</Text>
+            <Text style={styles.value}>{notifPrefs?.deadlineLeadHours ?? 24}h</Text>
           </View>
         </Card>
 
@@ -362,9 +407,24 @@ export default function SettingsScreen() {
 const makeStyles = (theme: Theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.canvas },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: theme.spacing[5],
     paddingTop: theme.spacing[12],
     paddingBottom: theme.spacing[3],
+  },
+  headerLeft: {
+    width: 60,
+  },
+  headerRight: {
+    width: 60,
+  },
+  backBtn: {
+    paddingVertical: theme.spacing[1],
+  },
+  backBtnText: {
+    fontSize: theme.typography.secondary,
+    color: theme.colors.inkSecondary,
   },
   title: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.ink },
   content: { padding: theme.spacing[5], paddingBottom: 120 },
@@ -401,7 +461,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     flex: 1,
     fontSize: theme.typography.secondary,
     color: theme.colors.ink,
-    textAlign: 'right',
+    textAlign: 'left',
     paddingVertical: theme.spacing[1],
   },
   levelRow: { flexDirection: 'row', gap: theme.spacing[1.5] },

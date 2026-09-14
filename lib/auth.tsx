@@ -57,7 +57,7 @@ type AuthState = {
     department: string;
     level: number;
     passcode: string;
-  }) => Promise<void>;
+  }) => Promise<Id<'users'>>;
   login: (email: string, passcode: string) => Promise<void>;
   logout: () => Promise<void>;
   changePasscode: (currentPasscode: string, newPasscode: string) => Promise<void>;
@@ -66,7 +66,7 @@ type AuthState = {
 const AuthContext = createContext<AuthState>({
   userId: null,
   isLoading: true,
-  signup: async () => {},
+  signup: async () => null as any,
   login: async () => {},
   logout: async () => {},
   changePasscode: async () => {},
@@ -126,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }) => {
       const result = await signupMutation(args);
       await persistSession(result);
+      return result.userId;
     },
     [signupMutation, persistSession]
   );

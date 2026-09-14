@@ -478,8 +478,6 @@ function IconArrowRight({ color }: { color: string }) {
   );
 }
 
-const styles = StyleSheet.create({});
-
 function makeStyles(t: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: t.colors.canvas },
@@ -488,7 +486,7 @@ function makeStyles(t: ReturnType<typeof useTheme>) {
       justifyContent: 'space-between',
       alignItems: 'flex-start',
       paddingHorizontal: t.spacing[5],
-      paddingTop: t.spacing[3],
+      paddingTop: t.spacing[12],
       paddingBottom: t.spacing[3],
     },
     headerLeft: { flex: 1 },

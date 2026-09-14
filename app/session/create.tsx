@@ -149,10 +149,16 @@ export default function SessionModal() {
     <View style={styles.container}>
       {/* Glass sheet header */}
       <View style={styles.sheetHeader}>
+        <View style={styles.sheetHeaderRow}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.cancelBtn} accessibilityLabel="Cancel">
+            <Text style={styles.cancelBtnText}>Cancel</Text>
+          </TouchableOpacity>
+          <Text style={styles.sheetTitle}>
+            {params.sessionId ? 'Edit session' : 'New session'}
+          </Text>
+          <View style={styles.cancelBtn} />
+        </View>
         <View style={styles.dragHandle} />
-        <Text style={styles.sheetTitle}>
-          {params.sessionId ? 'Edit session' : 'New session'}
-        </Text>
       </View>
 
       <ScrollView
@@ -342,7 +348,20 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     paddingTop: theme.spacing[3],
     paddingHorizontal: theme.spacing[5],
     paddingBottom: theme.spacing[4],
+  },
+  sheetHeaderRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing[2],
+  },
+  cancelBtn: {
+    width: 60,
+    alignItems: 'flex-start',
+  },
+  cancelBtnText: {
+    fontSize: theme.typography.secondary,
+    color: theme.colors.inkSecondary,
   },
   dragHandle: {
     width: 36,
@@ -376,6 +395,8 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   courseOption: {
     paddingHorizontal: theme.spacing[3],
     paddingVertical: theme.spacing[2],
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: theme.radii.chip,
     borderWidth: 1.5,
     borderColor: theme.colors.hairline,

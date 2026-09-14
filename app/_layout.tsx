@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { SyncProvider } from '@/lib/SyncProvider';
+import { SyncBanner } from '@/components/SyncBanner';
 
 LogBox.ignoreLogs(['ConvexClient']);
 
@@ -77,7 +79,10 @@ export default function RootLayout() {
       <GestureHandlerRootView style={styles.root}>
         <StatusBar style="dark" />
         <AuthProvider>
-          <RootNavigator />
+          <SyncProvider>
+            <SyncBanner />
+            <RootNavigator />
+          </SyncProvider>
         </AuthProvider>
       </GestureHandlerRootView>
     </ThemeProvider>
