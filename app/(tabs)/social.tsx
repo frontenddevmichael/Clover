@@ -75,7 +75,7 @@ export default function SocialScreen() {
 
   const userRoomMap = useMemo(() => {
     if (!userRooms) return {};
-    return Object.fromEntries(userRooms.map((r) => [r.courseCode, r]));
+    return Object.fromEntries(userRooms.map((r: any) => [r.courseCode, r]));
   }, [userRooms]);
 
   const handleJoin = async () => {
@@ -139,7 +139,7 @@ export default function SocialScreen() {
             message="Add courses first, then join their rooms to connect with course-mates."
           />
         ) : (
-          courses.map((course) => (
+          courses.map((course: any) => (
             <TouchableOpacity
               key={course._id}
               onPress={() => setSelectedRoom(course.code)}
@@ -186,7 +186,7 @@ export default function SocialScreen() {
             {/* Members */}
             <Card style={styles.detailCard}>
               <Text style={styles.detailLabel}>Members</Text>
-              {roomMembers?.map((member) => (
+              {roomMembers?.map((member: any) => (
                 <View key={member.userId} style={styles.memberRow}>
                   <Text style={styles.memberName}>{member.name}</Text>
                   <Chip
@@ -216,7 +216,7 @@ export default function SocialScreen() {
               <Text style={styles.detailLabel}>Free time today</Text>
               {overlap && overlap.overlapSlots.length > 0 ? (
                 <View style={styles.overlapGrid}>
-                  {overlap.overlapSlots.slice(0, 8).map((slot, i) => (
+                  {overlap.overlapSlots.slice(0, 8).map((slot: any, i: number) => (
                     <View key={i} style={styles.overlapSlot}>
                       <Text style={styles.overlapTime}>
                         {slot.start}–{slot.end}
@@ -240,7 +240,7 @@ export default function SocialScreen() {
             <Card style={styles.detailCard}>
               <Text style={styles.detailLabel}>Shared deadlines</Text>
               {sharedDeadlines && sharedDeadlines.length > 0 ? (
-                sharedDeadlines.map((d, i) => (
+                sharedDeadlines.map((d: any, i: number) => (
                   <View key={i} style={styles.deadlineRow}>
                     <Text style={styles.deadlineTitle}>{d.title}</Text>
                     <Text style={styles.deadlineDate}>{d.dueDate}</Text>
@@ -284,7 +284,7 @@ export default function SocialScreen() {
             {(!courses || courses.length === 0) && (
               <Text style={styles.emptyText}>No courses yet — add courses first.</Text>
             )}
-            {courses?.map((course) => (
+            {courses?.map((course: any) => (
               <View key={course._id} style={styles.shareRow}>
                 <View>
                   <Text style={styles.shareRowCode}>{course.code}</Text>

@@ -115,7 +115,7 @@ export default function DeadlinesScreen() {
   const courseMap = useMemo(() => {
     if (!courses) return {};
     // Keyed by _id — deadline rows resolve course color/code from courseId
-    return Object.fromEntries(courses.map((c) => [c._id, c]));
+    return Object.fromEntries(courses.map((c: any) => [c._id, c]));
   }, [courses]);
 
   const resetForm = () => {
@@ -133,7 +133,7 @@ export default function DeadlinesScreen() {
       Alert.alert('Missing fields', 'Title and due date are required.');
       return;
     }
-    const course = courses?.find((c) => c.code.toLowerCase() === courseCode.toLowerCase());
+    const course = courses?.find((c: any) => c.code.toLowerCase() === courseCode.toLowerCase());
     if (!course) {
       Alert.alert('Course not found', 'Enter a valid course code.');
       return;
@@ -157,7 +157,7 @@ export default function DeadlinesScreen() {
 
   const handleEdit = (d: any) => {
     setTitle(d.title);
-    setCourseCode(courses?.find((c) => c._id === d.courseId)?.code ?? '');
+    setCourseCode(courses?.find((c: any) => c._id === d.courseId)?.code ?? '');
     setType(d.type);
     setDueDate(d.dueDate);
     setDueTime(d.dueTime ?? '');

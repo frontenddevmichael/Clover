@@ -193,7 +193,7 @@ export default function SemesterScreen() {
         />
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
-          {semesters?.map((sem) => {
+          {semesters?.map((sem: any) => {
             const isActive = activeSemester?._id === sem._id;
             return (
               <TouchableOpacity

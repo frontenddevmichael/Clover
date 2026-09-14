@@ -167,7 +167,7 @@ export default function SessionModal() {
           showsHorizontalScrollIndicator={false}
           style={styles.courseScroll}
         >
-          {courses?.map((course) => (
+          {courses?.map((course: any) => (
             <TouchableOpacity
               key={course._id}
               onPress={() => setSelectedCourse(course._id)}

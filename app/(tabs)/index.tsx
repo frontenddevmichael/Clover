@@ -160,7 +160,7 @@ export default function ScheduleScreen() {
   const sessions = allSessions ?? [];
   const courseMap = useMemo(() => {
     if (!courses) return {};
-    return Object.fromEntries(courses.map((c) => [c._id, c]));
+    return Object.fromEntries(courses.map((c: any) => [c._id, c]));
   }, [courses]);
 
   const dayWorkloads = useMemo(() => {

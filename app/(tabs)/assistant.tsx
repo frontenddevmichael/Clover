@@ -9,7 +9,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, useAction, useQuery } from 'convex/react';
 import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
@@ -225,8 +225,8 @@ export default function AssistantScreen() {
   const [loading, setLoading] = useState(false);
   const [changeDesc, setChangeDesc] = useState('');
 
-  const generatePlan = useMutation(api.aiAssistant.generatePlan);
-  const repropose = useMutation(api.aiAssistant.repropose);
+  const generatePlan = useAction(api.aiAssistant.generatePlan);
+  const repropose = useAction(api.aiAssistant.repropose);
   const acceptProposal = useMutation(api.aiAssistant.acceptProposal);
   const rejectProposal = useMutation(api.aiAssistant.rejectProposal);
   const rateLimit = useQuery(api.aiAssistant.getRateLimit, userId ? { userId } : 'skip');
