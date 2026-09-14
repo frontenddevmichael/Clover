@@ -229,7 +229,7 @@ export default function NavDock() {
   }));
 
   return (
-    <View style={[styles.outer, { paddingBottom: Math.max(insets.bottom, 6) }]}>
+    <View style={styles.outer}>
       <View style={styles.barContainer}>
         {/* White bar with circular cutout at top center */}
         <Svg
@@ -238,6 +238,7 @@ export default function NavDock() {
           height={BAR_HEIGHT}
           style={styles.barSvg}
         >
+          {/* Filled bar shape */}
           <Path
             d={`
               M 0 16
@@ -251,6 +252,30 @@ export default function NavDock() {
               Z
             `}
             fill="white"
+          />
+          {/* Dashed top edge to show the cutout shape */}
+          <Path
+            d={`
+              M 0 0.5
+              L ${SCREEN_W * 0.5 - 38} 0.5
+              A 38 38 0 0 1 ${SCREEN_W * 0.5 + 38} 0.5
+              L ${SCREEN_W} 0.5
+            `}
+            stroke="#E5E7EB"
+            strokeWidth={1.5}
+            strokeDasharray="6 4"
+            fill="none"
+          />
+          {/* Dashed outline of the cutout arc itself */}
+          <Path
+            d={`
+              M ${SCREEN_W * 0.5 - 38} 0.5
+              A 38 38 0 0 1 ${SCREEN_W * 0.5 + 38} 0.5
+            `}
+            stroke="#D1D5DB"
+            strokeWidth={1}
+            strokeDasharray="4 3"
+            fill="none"
           />
         </Svg>
 
@@ -330,6 +355,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: 'white',
   },
   barContainer: {
     position: 'relative',
