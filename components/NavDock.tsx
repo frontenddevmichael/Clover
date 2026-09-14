@@ -27,8 +27,9 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const TAP = 48;
 const MORPH_MS = motion.duration;
 const SOFT_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
-const BAR_HEIGHT = 64;
-const CUTOUT_RADIUS = 38; // radius of the circular cutout for the CTA
+const BAR_HEIGHT = 76;
+const CUTOUT_RADIUS = 36;
+const CUTOUT_CENTER_Y = 0; // top edge of the bar
 
 // ─── Workload ───
 type WorkloadLevel = 'light' | 'balanced' | 'heavy' | 'overloaded';
@@ -230,93 +231,75 @@ export default function NavDock() {
 
   return (
     <View style={styles.outer}>
-      <View style={styles.barContainer}>
-        {/* White bar with circular cutout at top center */}
-        <Svg
-          viewBox={`0 0 ${SCREEN_W} ${BAR_HEIGHT}`}
-          width={SCREEN_W}
-          height={BAR_HEIGHT}
-          style={styles.barSvg}
-        >
-          {/* Filled bar shape */}
-          <Path
-            d={`
-              M 0 16
-              Q 0 0, 16 0
-              L ${SCREEN_W * 0.5 - 38} 0
-              A 38 38 0 0 1 ${SCREEN_W * 0.5 + 38} 0
-              L ${SCREEN_W - 16} 0
-              Q ${SCREEN_W} 0, ${SCREEN_W} 16
-              L ${SCREEN_W} ${BAR_HEIGHT}
-              L 0 ${BAR_HEIGHT}
-              Z
-            `}
-            fill="white"
-          />
-          {/* Dashed top edge to show the cutout shape */}
-          <Path
-            d={`
-              M 0 0.5
-              L ${SCREEN_W * 0.5 - 38} 0.5
-              A 38 38 0 0 1 ${SCREEN_W * 0.5 + 38} 0.5
-              L ${SCREEN_W} 0.5
-            `}
-            stroke="#E5E7EB"
-            strokeWidth={1.5}
-            strokeDasharray="6 4"
-            fill="none"
-          />
-          {/* Dashed outline of the cutout arc itself */}
-          <Path
-            d={`
-              M ${SCREEN_W * 0.5 - 38} 0.5
-              A 38 38 0 0 1 ${SCREEN_W * 0.5 + 38} 0.5
-            `}
-            stroke="#D1D5DB"
-            strokeWidth={1}
-            strokeDasharray="4 3"
-            fill="none"
-          />
-        </Svg>
+      {/* White bar shape with concave cutout — this IS the bar */}
+      <Svg
+        viewBox={`0 0 ${SCREEN_W} ${BAR_HEIGHT}`}
+        width={SCREEN_W}
+        height={BAR_HEIGHT}
+        style={styles.barSvg}
+      >
+        <Path
+          d={`
+            M 0 20
+            Q 0 4, 16 4
+            L ${SCREEN_W * 0.5 - CUTOUT_RADIUS - 4} 4
+            C ${SCREEN_W * 0.5 - CUTOUT_RADIUS - 4} 4, ${SCREEN_W * 0.5 - CUTOUT_RADIUS} 4, ${SCREEN_W * 0.5 - CUTOUT_RADIUS} ${CUTOUT_RADIUS + 4}
+            A ${CUTOUT_RADIUS} ${CUTOUT_RADIUS} 0 0 0 ${SCREEN_W * 0.5 + CUTOUT_RADIUS} ${CUTOUT_RADIUS + 4}
+            C ${SCREEN_W * 0.5 + CUTOUT_RADIUS} 4, ${SCREEN_W * 0.5 + CUTOUT_RADIUS + 4} 4, ${SCREEN_W * 0.5 + CUTOUT_RADIUS + 4} 4
+            L ${SCREEN_W - 16} 4
+            Q ${SCREEN_W} 4, ${SCREEN_W} 20
+            L ${SCREEN_W} ${BAR_HEIGHT}
+            L 0 ${BAR_HEIGHT}
+            Z
+          `}
+          fill="white"
+        />
+        {/* Visible stroke along the cutout edge */}
+        <Path
+          d={`
+            M ${SCREEN_W * 0.5 - CUTOUT_RADIUS - 4} 4
+            C ${SCREEN_W * 0.5 - CUTOUT_RADIUS - 4} 4, ${SCREEN_W * 0.5 - CUTOUT_RADIUS} 4, ${SCREEN_W * 0.5 - CUTOUT_RADIUS} ${CUTOUT_RADIUS + 4}
+            A ${CUTOUT_RADIUS} ${CUTOUT_RADIUS} 0 0 0 ${SCREEN_W * 0.5 + CUTOUT_RADIUS} ${CUTOUT_RADIUS + 4}
+            C ${SCREEN_W * 0.5 + CUTOUT_RADIUS} 4, ${SCREEN_W * 0.5 + CUTOUT_RADIUS + 4} 4, ${SCREEN_W * 0.5 + CUTOUT_RADIUS + 4} 4
+          `}
+          stroke="#D1D5DB"
+          strokeWidth={1}
+          fill="none"
+        />
+      </Svg>
 
-        {/* Icons row */}
-        <View style={styles.iconsRow}>
-          {/* Left tabs */}
-          <View style={styles.leftTabs}>
-            {TABS.slice(0, 2).map((tab) => (
-              <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} />
-            ))}
-          </View>
-
-          {/* Center spacer — cutout area */}
-          <View style={styles.centerSpacer} />
-
-          {/* Right tabs */}
-          <View style={styles.rightTabs}>
-            {TABS.slice(2).map((tab) => (
-              <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} />
-            ))}
-          </View>
+      {/* Icons positioned on top of the bar */}
+      <View style={styles.iconsOverlay}>
+        <View style={styles.leftTabs}>
+          {TABS.slice(0, 2).map((tab) => (
+            <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} />
+          ))}
         </View>
-
-        {/* Center button — suspended in the cutout */}
-        <Pressable
-          onPress={() =>
-            center.params
-              ? router.push({ pathname: center.route as never, params: center.params })
-              : router.push(center.route as never)
-          }
-          style={styles.centerHit}
-          accessibilityRole="button"
-          accessibilityLabel={center.label}
-        >
-          <View style={styles.centerBtn}>
-            <Animated.View style={morphStyle}>
-              <center.Icon />
-            </Animated.View>
-          </View>
-        </Pressable>
+        <View style={styles.centerSpacer} />
+        <View style={styles.rightTabs}>
+          {TABS.slice(2).map((tab) => (
+            <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} />
+          ))}
+        </View>
       </View>
+
+      {/* CTA button — sits inside the cutout */}
+      <Pressable
+        onPress={() =>
+          center.params
+            ? router.push({ pathname: center.route as never, params: center.params })
+            : router.push(center.route as never)
+        }
+        style={styles.centerHit}
+        accessibilityRole="button"
+        accessibilityLabel={center.label}
+      >
+        <View style={styles.centerBtn}>
+          <Animated.View style={morphStyle}>
+            <center.Icon />
+          </Animated.View>
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -355,38 +338,34 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'white',
-  },
-  barContainer: {
-    position: 'relative',
   },
   barSvg: {
     position: 'absolute',
     top: 0,
     left: 0,
   },
-  iconsRow: {
+  iconsOverlay: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     height: BAR_HEIGHT,
-    paddingHorizontal: theme.spacing[2],
+    paddingHorizontal: theme.spacing[3],
   },
   leftTabs: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-end',
-    paddingBottom: theme.spacing[2],
+    paddingBottom: theme.spacing[3],
   },
   rightTabs: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-end',
-    paddingBottom: theme.spacing[2],
+    paddingBottom: theme.spacing[3],
   },
   centerSpacer: {
-    width: 76,
+    width: 72,
   },
   tabIcon: {
     alignItems: 'center',
@@ -407,7 +386,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   centerHit: {
     position: 'absolute',
     left: '50%',
-    top: -16,
+    top: 0,
     width: 56,
     height: 56,
     marginLeft: -28,
@@ -423,9 +402,9 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });
