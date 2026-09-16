@@ -1,13 +1,15 @@
 // Insights screen — analytics, charts, and productivity trends.
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useQuery } from 'convex/react';
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
 import { api } from '../../convex/_generated/api';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { Card } from '@/components/Card';
-import { ProfileButton } from '@/components/ProfileButton';
+import { HeaderBar } from '@/components/HeaderBar';
+import { SideDrawer } from '@/components/SideDrawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CornerStamp, GeoDots, CountBadge } from '@/components/neoBrutalist';
 import {
@@ -131,7 +133,9 @@ export default function InsightsScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
+  const router = useRouter();
 
   const sessions = useQuery(api.sessions.listByUser, userId ? { userId } : 'skip');
   const courses = useQuery(api.courses.listByUser, userId ? { userId } : 'skip');
@@ -177,7 +181,10 @@ export default function InsightsScreen() {
           <Text style={styles.title}>Insights</Text>
           <GeoDots rows={1} cols={8} dotSize={3} gap={6} color={t.colors.hairline} style={{ marginTop: 4 }} />
         </View>
-        <ProfileButton />
+        <HeaderBar
+          onMenuPress={() => setDrawerOpen(true)}
+          onSettingsPress={() => router.push('/(tabs)/settings')}
+        />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -249,6 +256,7 @@ export default function InsightsScreen() {
           </Text>
         </Card>
       </ScrollView>
+      <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
 }

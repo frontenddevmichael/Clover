@@ -39,6 +39,8 @@ import { useAuth } from '@/lib/auth';
 import { useRouter } from 'expo-router';
 import { toMinutes, dateForDayOfWeek, isActiveSession, daysUntil } from '@/lib/dateUtils';
 import { ProfileButton } from '@/components/ProfileButton';
+import { HeaderBar } from '@/components/HeaderBar';
+import { SideDrawer } from '@/components/SideDrawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -142,6 +144,7 @@ export default function ScheduleScreen() {
   const { userId } = useAuth();
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(() => new Date().getDay());
 
   const user = useQuery(api.users.getById, userId ? { userId } : 'skip');
@@ -272,7 +275,10 @@ export default function ScheduleScreen() {
           )}
         </View>
         <View style={s.headerRight}>
-          <ProfileButton />
+          <HeaderBar
+            onMenuPress={() => setDrawerOpen(true)}
+            onSettingsPress={() => router.push('/(tabs)/settings')}
+          />
         </View>
       </View>
 
@@ -503,6 +509,7 @@ export default function ScheduleScreen() {
           </View>
         )}
       </ScrollView>
+      <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </GridBackground>
   );
 }

@@ -22,7 +22,8 @@ import { Chip } from '@/components/Chip';
 import { Button } from '@/components/Button';
 import { FormInput } from '@/components/Input';
 import { EmptyState } from '@/components/EmptyState';
-import { ProfileButton } from '@/components/ProfileButton';
+import { HeaderBar } from '@/components/HeaderBar';
+import { SideDrawer } from '@/components/SideDrawer';
 import { useAuth } from '@/lib/auth';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +34,7 @@ export default function SocialScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
   const router = useRouter();
   const [joinCode, setJoinCode] = useState('');
@@ -114,7 +116,10 @@ export default function SocialScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Course Rooms</Text>
-          <ProfileButton />
+          <HeaderBar
+            onMenuPress={() => setDrawerOpen(true)}
+            onSettingsPress={() => router.push('/(tabs)/settings')}
+          />
         </View>
       </View>
 
@@ -317,6 +322,7 @@ export default function SocialScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+      <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
 }

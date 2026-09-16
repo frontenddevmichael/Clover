@@ -21,6 +21,8 @@ import { Button } from '@/components/Button';
 import { FormInput } from '@/components/Input';
 import { EmptyState } from '@/components/EmptyState';
 import { ProfileButton } from '@/components/ProfileButton';
+import { HeaderBar } from '@/components/HeaderBar';
+import { SideDrawer } from '@/components/SideDrawer';
 import { useAuth } from '@/lib/auth';
 import { IconFileText, IconBarChart, IconTarget, IconBell } from '@/components/Illustrations';
 import Svg, { Path } from 'react-native-svg';
@@ -90,6 +92,7 @@ export default function DeadlinesScreen() {
   const typeCfg = typeConfig(t);
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOnline = isConnected && isInternetReachable !== false;
@@ -252,6 +255,7 @@ export default function DeadlinesScreen() {
   const overdueCount = displayDeadlines.filter((d: Doc<"deadlines">) => daysUntil(d.dueDate) < 0 && !d.completed).length;
 
   return (
+    <>
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
@@ -264,7 +268,10 @@ export default function DeadlinesScreen() {
               {overdueCount > 0 && ` · ${overdueCount} overdue`}
             </Text>
           </View>
-          <ProfileButton />
+          <HeaderBar
+            onMenuPress={() => setDrawerOpen(true)}
+            onSettingsPress={() => router.push('/(tabs)/settings')}
+          />
         </View>
       </View>
 
@@ -430,6 +437,8 @@ export default function DeadlinesScreen() {
         />
       )}
     </View>
+    <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </>
   );
 }
 

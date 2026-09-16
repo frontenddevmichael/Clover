@@ -32,6 +32,8 @@ import { Button } from '@/components/Button';
 import { IconSparkle } from '@/components/Illustrations';
 import { useAuth } from '@/lib/auth';
 import { ProfileButton } from '@/components/ProfileButton';
+import { HeaderBar } from '@/components/HeaderBar';
+import { SideDrawer } from '@/components/SideDrawer';
 import { ThickFrame, OffsetShadow, CornerStamp, BoldDivider } from '@/components/neoBrutalist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -277,6 +279,7 @@ export default function AssistantScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
   const router = useRouter();
   const { action } = useLocalSearchParams<{ action?: string }>();
@@ -403,7 +406,10 @@ export default function AssistantScreen() {
             <Text style={styles.title}>Assistant</Text>
             <Text style={styles.subtitle}>Plan my week</Text>
           </View>
-          <ProfileButton />
+          <HeaderBar
+            onMenuPress={() => setDrawerOpen(true)}
+            onSettingsPress={() => router.push('/(tabs)/settings')}
+          />
         </View>
         {rateLimit && (
           <View style={styles.ratePill}>
@@ -545,6 +551,7 @@ export default function AssistantScreen() {
           />
         </View>
       </ScrollView>
+      <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
 }

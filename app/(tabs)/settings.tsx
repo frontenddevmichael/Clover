@@ -1,5 +1,5 @@
 // Settings screen — all data from Convex, no hardcoded content
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -38,55 +38,7 @@ export default function SettingsScreen() {
   const user = useQuery(api.users.getById, userId ? { userId } : 'skip');
   const notifPrefs = useQuery(api.notifications.getPreferences, userId ? { userId } : 'skip');
   const deleteAccount = useMutation(api.users.deleteAccount);
-  const updateProfile = useMutation(api.users.updateProfile);
   const saveNotifPrefs = useMutation(api.notifications.savePreferences);
-
-  // ── Profile editing (FR2, FR3) ──
-  const [name, setName] = useState('');
-  const [institution, setInstitution] = useState('');
-  const [department, setDepartment] = useState('');
-  const [level, setLevel] = useState('300');
-  const [savingProfile, setSavingProfile] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    setName(user.name ?? '');
-    setInstitution(user.institution ?? '');
-    setDepartment(user.department ?? '');
-    setLevel(user.level ? String(user.level) : '300');
-  }, [user?.name, user?.institution, user?.department, user?.level]);
-
-  const profileDirty = useMemo(() => {
-    if (!user) return false;
-    return (
-      name !== (user.name ?? '') ||
-      institution !== (user.institution ?? '') ||
-      department !== (user.department ?? '') ||
-      level !== (user.level ? String(user.level) : '300')
-    );
-  }, [user, name, institution, department, level]);
-
-  const handleSaveProfile = async () => {
-    if (!userId) return;
-    if (!name.trim() || !institution.trim()) {
-      Alert.alert('Missing fields', 'Name and institution are required.');
-      return;
-    }
-    setSavingProfile(true);
-    try {
-      await updateProfile({
-        id: userId,
-        name: name.trim(),
-        institution: institution.trim(),
-        department: department.trim(),
-        level: parseInt(level, 10) || 100,
-      });
-      toast.success('Profile updated');
-    } catch {
-      Alert.alert('Error', 'Could not save your profile.');
-    }
-    setSavingProfile(false);
-  };
 
   // ── Change passcode (requires the current passcode) ──
   const [showPasscodeForm, setShowPasscodeForm] = useState(false);
@@ -215,10 +167,6 @@ export default function SettingsScreen() {
     );
   };
 
-  const initials = user?.name
-    ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-    : '?';
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -232,100 +180,6 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user?.name ?? 'Your name'}</Text>
-            <Text style={styles.profileEmail}>{user?.email ?? ''}</Text>
-            <View style={styles.profileMeta}>
-              <Text style={styles.profileBadge}>{user?.institution || 'University'}</Text>
-              <Text style={styles.profileDot}>·</Text>
-              <Text style={styles.profileBadge}>{user?.level ? `${user.level} Level` : 'Level'}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Profile section — editable (FR2, FR3) */}
-        <Text style={styles.sectionTitle}>Profile</Text>
-        <Card style={styles.card}>
-          <View style={styles.editRow}>
-            <Text style={styles.label}>Name</Text>
-            <TextInput
-              style={styles.editInput}
-              value={name}
-              onChangeText={setName}
-              placeholder="Full name"
-              placeholderTextColor={t.colors.neutral300}
-              autoCapitalize="words"
-              accessibilityLabel="Name"
-            />
-          </View>
-        </Card>
-        <Card style={styles.card}>
-          <View style={styles.editRow}>
-            <Text style={styles.label}>Institution</Text>
-            <TextInput
-              style={styles.editInput}
-              value={institution}
-              onChangeText={setInstitution}
-              placeholder="e.g. University of Lagos"
-              placeholderTextColor={t.colors.neutral300}
-              autoCapitalize="words"
-              accessibilityLabel="Institution"
-            />
-          </View>
-        </Card>
-        <Card style={styles.card}>
-          <View style={styles.editRow}>
-            <Text style={styles.label}>Department</Text>
-            <TextInput
-              style={styles.editInput}
-              value={department}
-              onChangeText={setDepartment}
-              placeholder="e.g. Computer Science"
-              placeholderTextColor={t.colors.neutral300}
-              autoCapitalize="words"
-              accessibilityLabel="Department"
-            />
-          </View>
-        </Card>
-        <Card style={styles.card}>
-          <View style={styles.editRow}>
-            <Text style={styles.label}>Level</Text>
-            <View style={styles.levelRow}>
-              {['100', '200', '300', '400', '500'].map((l) => (
-                <TouchableOpacity
-                  key={l}
-                  onPress={() => setLevel(l)}
-                  style={[styles.levelBtn, level === l && styles.levelBtnActive]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: level === l }}
-                >
-                  <Text
-                    style={[
-                      styles.levelBtnText,
-                      level === l && styles.levelBtnTextActive,
-                    ]}
-                  >
-                    {l}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </Card>
-        {profileDirty && (
-          <Button
-            label={savingProfile ? 'Saving...' : 'Save changes'}
-            onPress={handleSaveProfile}
-            loading={savingProfile}
-            style={styles.saveButton}
-          />
-        )}
-
         {/* Navigation */}
         <Text style={styles.sectionTitle}>Planning</Text>
         <TouchableOpacity onPress={() => router.push('/semester')} accessibilityRole="button" accessibilityLabel="Semester settings">

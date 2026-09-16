@@ -18,7 +18,8 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { FormInput } from '@/components/Input';
 import { EmptyState } from '@/components/EmptyState';
-import { ProfileButton } from '@/components/ProfileButton';
+import { HeaderBar } from '@/components/HeaderBar';
+import { SideDrawer } from '@/components/SideDrawer';
 import { useAuth } from '@/lib/auth';
 import { useNetworkStatus } from '@/lib/useNetworkStatus';
 import { enqueue } from '@/lib/offlineQueue';
@@ -31,6 +32,7 @@ export default function CoursesScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const params = useLocalSearchParams<{ compose?: string }>();
   const COURSE_TAG_COLORS = t.colors.courseTags;
   const { userId } = useAuth();
@@ -129,7 +131,10 @@ export default function CoursesScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
             <Text style={styles.backBtnText}>Back</Text>
           </TouchableOpacity>
-          <ProfileButton />
+          <HeaderBar
+            onMenuPress={() => setDrawerOpen(true)}
+            onSettingsPress={() => router.push('/(tabs)/settings')}
+          />
         </View>
         <View>
           <Text style={styles.title}>Courses</Text>
@@ -227,6 +232,7 @@ export default function CoursesScreen() {
           )}
         />
       )}
+      <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
 }

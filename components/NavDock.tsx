@@ -174,20 +174,15 @@ function AskIcon() {
 }
 
 // ─── Tab config ───
+// Focus, Insights, Rooms moved to SideDrawer header menu
 const TABS = [
   { key: 'index', label: 'Home', route: '/(tabs)', match: (p: string) => p === '/' || p === '/(tabs)' || p === '/(tabs)/', Icon: HomeIcon },
   { key: 'deadlines', label: 'Deadlines', route: '/(tabs)/deadlines', match: (p: string) => p.includes('/deadlines'), Icon: FlagIcon },
-  { key: 'focus', label: 'Focus', route: '/(tabs)/focus', match: (p: string) => p.includes('/focus'), Icon: FocusIcon },
-  { key: 'insights', label: 'Insights', route: '/(tabs)/insights', match: (p: string) => p.includes('/insights'), Icon: InsightsIcon },
-  { key: 'social', label: 'Rooms', route: '/(tabs)/social', match: (p: string) => p.includes('/social'), Icon: RoomsIcon },
   { key: 'assistant', label: 'Assistant', route: '/(tabs)/assistant', match: (p: string) => p.includes('/assistant'), Icon: AssistantIcon },
 ] as const;
 
 function getCenterSpec(pathname: string) {
   if (pathname.includes('/deadlines')) return { label: 'Add deadline', Icon: DeadlineFlagBig, route: '/(tabs)/deadlines', params: { compose: '1' } };
-  if (pathname.includes('/focus')) return { label: 'Add session', Icon: PlusIcon, route: '/session/create' };
-  if (pathname.includes('/insights')) return { label: 'Add session', Icon: PlusIcon, route: '/session/create' };
-  if (pathname.includes('/social')) return { label: 'Sharing settings', Icon: ShareOverlapBig, route: '/(tabs)/social', params: { share: '1' } };
   if (pathname.includes('/assistant')) return { label: 'Generate new plan', Icon: AskIcon, route: '/(tabs)/assistant', params: { action: 'new-plan' } };
   if (pathname.includes('/courses')) return { label: 'Add course', Icon: PlusIcon, route: '/(tabs)/courses', params: { compose: '1' } };
   return { label: 'Add session', Icon: PlusIcon, route: '/session/create' };
@@ -307,13 +302,13 @@ export default function NavDock() {
       {/* Icons positioned on top of the bar */}
       <View style={styles.iconsOverlay}>
         <View style={styles.leftTabs}>
-          {TABS.slice(0, 3).map((tab) => (
+          {TABS.slice(0, 2).map((tab) => (
             <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} ink={t.colors.ink} inkSecondary={t.colors.inkSecondary} inkFaint={t.colors.inkFaint} />
           ))}
         </View>
         <View style={styles.centerSpacer} />
         <View style={styles.rightTabs}>
-          {TABS.slice(3).map((tab) => (
+          {TABS.slice(2).map((tab) => (
             <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} ink={t.colors.ink} inkSecondary={t.colors.inkSecondary} inkFaint={t.colors.inkFaint} />
           ))}
         </View>

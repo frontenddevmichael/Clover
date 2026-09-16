@@ -8,6 +8,7 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Doc } from '../../convex/_generated/dataModel';
@@ -18,7 +19,8 @@ import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
-import { ProfileButton } from '@/components/ProfileButton';
+import { HeaderBar } from '@/components/HeaderBar';
+import { SideDrawer } from '@/components/SideDrawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CornerStamp,
@@ -42,7 +44,9 @@ export default function FocusScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
+  const router = useRouter();
 
   const todayStats = useQuery(
     api.focusSessions.todayStats,
@@ -192,7 +196,10 @@ export default function FocusScreen() {
           <Text style={styles.title}>Focus</Text>
           <GeoDots rows={1} cols={8} dotSize={3} gap={6} color={t.colors.hairline} style={{ marginTop: 4 }} />
         </View>
-        <ProfileButton />
+        <HeaderBar
+          onMenuPress={() => setDrawerOpen(true)}
+          onSettingsPress={() => router.push('/(tabs)/settings')}
+        />
       </View>
 
       {/* Stats bar */}
@@ -315,6 +322,7 @@ export default function FocusScreen() {
           />
         </View>
       )}
+      <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
 }
