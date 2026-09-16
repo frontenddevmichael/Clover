@@ -22,21 +22,17 @@ import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { StickyNote } from '@/components/StickyNote';
 import { GridBackground } from '@/components/GridBackground';
-import { WorkloadIndicator } from '@/components/WorkloadIndicator';
 import { ElevatedSurface } from '@/components/ElevatedSurface';
-import { EmptyState } from '@/components/EmptyState';
 import {
   CornerStamp,
-  OffsetShadow,
-  GeoDots,
-  BoldDivider,
   FloatingTag,
   CountBadge,
 } from '@/components/neoBrutalist';
-import { WaveDivider, GreetingBanner } from '@/components/SignatureElements';
+import { GreetingBanner } from '@/components/SignatureElements';
 import { IconFlag, IconGraduationCap, IconUsers, IconBarChart, IconClock, IconTarget } from '@/components/Illustrations';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'expo-router';
+import Svg, { Rect, Path } from 'react-native-svg';
 import { toMinutes, dateForDayOfWeek, isActiveSession, daysUntil } from '@/lib/dateUtils';
 import { ProfileButton } from '@/components/ProfileButton';
 import { HeaderBar } from '@/components/HeaderBar';
@@ -282,35 +278,7 @@ export default function ScheduleScreen() {
         </View>
       </View>
 
-      {/* Hero — today at a glance. Sessions count, deadline countdown, workload state. */}
-      <OffsetShadow offset={5} style={s.heroShadow}>
-        <ElevatedSurface tier="tier1" style={s.hero}>
-          <CornerStamp
-            label={dayWorkload === 'overloaded' ? 'HEAVY' : dayWorkload === 'heavy' ? 'BUSY' : 'TODAY'}
-            color={dayWorkload === 'overloaded' ? t.colors.workloadOverloadedBg : t.colors.neutral950}
-            style={s.heroStamp}
-          />
-          <View style={s.heroRow}>
-            <View style={s.heroStat}>
-              <CountBadge count={daySessions.length} size={36} />
-              <Text style={s.heroLabel}>sessions{'\n'}today</Text>
-            </View>
-            <View style={s.heroDivider} />
-            <View style={s.heroStat}>
-              <Text style={[s.heroNumber, nextDeadline && { color: t.colors.workloadOverloaded }]}>
-                {nextDeadline ? `${nextDeadline.daysLeft}d` : '—'}
-              </Text>
-              <Text style={s.heroLabel}>next{'\n'}deadline</Text>
-            </View>
-            <View style={s.heroDivider} />
-            <View style={s.heroWorkload}>
-              <WorkloadIndicator level={dayWorkload} />
-            </View>
-          </View>
-        </ElevatedSurface>
-      </OffsetShadow>
-
-      {/* Courses — persistent access (no longer a dock tab) */}
+      {/* Courses — persistent access */}
       <TouchableOpacity
         onPress={() => router.push('/(tabs)/courses')}
         activeOpacity={0.7}
@@ -331,8 +299,6 @@ export default function ScheduleScreen() {
         </Card>
       </TouchableOpacity>
 
-      <BoldDivider shape="diamond" style={{ marginHorizontal: 20, marginTop: 4 }} />
-
       {/* Week rail — glass tier-2 surface, spring selection */}
       <ElevatedSurface tier="tier2" style={s.weekRail} shadow="card">
         {DAYS.map((day, i) => {
@@ -352,8 +318,6 @@ export default function ScheduleScreen() {
         })}
       </ElevatedSurface>
 
-      <WaveDivider />
-
       {/* Day detail */}
       <ScrollView
         style={s.dayContent}
@@ -372,15 +336,27 @@ export default function ScheduleScreen() {
           )}
         </View>
 
-        <GeoDots rows={2} cols={16} dotSize={3} gap={6} color={t.colors.hairline} style={{ marginBottom: 8 }} />
-
         {daySessions.length === 0 ? (
-          <EmptyState
-            title={`${FULL_DAYS[selectedDay]} is clear`}
-            message="Nothing scheduled. Add a course to start building this day."
-            actionLabel="Add a course"
-            onAction={() => router.push('/(tabs)/courses')}
-          />
+          <View style={s.emptyWrap}>
+            <View style={s.emptyIconWrap}>
+              <Svg viewBox="0 0 24 24" width={48} height={48}>
+                <Rect x="3" y="4" width="18" height="18" rx="3" stroke={t.colors.inkFaint} strokeWidth={1.5} fill="none" />
+                <Path d="M3 9h18" stroke={t.colors.inkFaint} strokeWidth={1.5} />
+                <Path d="M8 2v4M16 2v4" stroke={t.colors.inkFaint} strokeWidth={1.5} strokeLinecap="round" />
+              </Svg>
+            </View>
+            <Text style={s.emptyTitle}>{FULL_DAYS[selectedDay]} is clear</Text>
+            <Text style={s.emptyMsg}>Nothing scheduled yet. Add a course{'\n'}to start building this day.</Text>
+            <TouchableOpacity
+              style={s.emptyBtn}
+              onPress={() => router.push('/(tabs)/courses')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Add a course"
+            >
+              <Text style={s.emptyBtnText}>Add a course</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           daySessions.map((session: Doc<"sessions">) => {
             const course = courseMap[session.courseId];
@@ -544,51 +520,6 @@ function makeStyles(t: ReturnType<typeof useTheme>) {
       letterSpacing: t.typography.trackingDisplay,
     },
     examChip: { marginTop: t.spacing[2] },
-    hero: {
-      marginHorizontal: t.spacing[5],
-      marginBottom: t.spacing[3],
-      paddingVertical: t.spacing[4],
-      paddingHorizontal: t.spacing[3],
-      borderRadius: t.radii.card,
-      overflow: 'visible',
-    },
-    heroShadow: {
-      marginHorizontal: t.spacing[5],
-      marginBottom: t.spacing[3],
-    },
-    heroStamp: {
-      position: 'absolute',
-      top: -8,
-      right: 12,
-      zIndex: 10,
-    },
-    heroRow: { flexDirection: 'row', alignItems: 'center' },
-    heroStat: { flex: 1, alignItems: 'center' },
-    heroNumber: {
-      fontSize: t.typography.hero,
-      fontWeight: t.typography.bold,
-      color: t.colors.ink,
-      letterSpacing: t.typography.trackingHero,
-      fontVariant: ['tabular-nums'],
-      lineHeight: t.typography.hero + 2,
-    },
-    heroLabel: {
-      fontSize: t.typography.micro,
-      fontWeight: t.typography.medium,
-      color: t.colors.inkSecondary,
-      textAlign: 'center',
-      letterSpacing: 0.4,
-      textTransform: 'uppercase',
-      marginTop: t.spacing[1],
-      lineHeight: t.typography.micro + 3,
-    },
-    heroDivider: {
-      width: StyleSheet.hairlineWidth,
-      alignSelf: 'stretch',
-      backgroundColor: t.colors.hairline,
-      marginVertical: t.spacing[2],
-    },
-    heroWorkload: { flex: 1.2, alignItems: 'center', justifyContent: 'center' },
     coursesRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -737,6 +668,48 @@ function makeStyles(t: ReturnType<typeof useTheme>) {
       letterSpacing: 0.04,
       marginBottom: t.spacing[2],
       textTransform: 'uppercase',
+    },
+    emptyWrap: {
+      alignItems: 'center',
+      paddingTop: t.spacing[12],
+      paddingBottom: t.spacing[8],
+      paddingHorizontal: t.spacing[6],
+    },
+    emptyIconWrap: {
+      width: 80,
+      height: 80,
+      borderRadius: t.radii.pill,
+      backgroundColor: t.colors.subtleFill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: t.spacing[5],
+    },
+    emptyTitle: {
+      fontSize: t.typography.body,
+      fontWeight: t.typography.semibold,
+      color: t.colors.ink,
+      textAlign: 'center',
+      marginBottom: t.spacing[2],
+    },
+    emptyMsg: {
+      fontSize: t.typography.secondary,
+      color: t.colors.inkSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginBottom: t.spacing[5],
+    },
+    emptyBtn: {
+      paddingHorizontal: t.spacing[5],
+      paddingVertical: t.spacing[3],
+      minHeight: 44,
+      justifyContent: 'center',
+      borderRadius: t.radii.chip,
+      backgroundColor: t.colors.fill,
+    },
+    emptyBtnText: {
+      fontSize: t.typography.secondary,
+      fontWeight: t.typography.semibold,
+      color: t.colors.fillInk,
     },
   });
 }
