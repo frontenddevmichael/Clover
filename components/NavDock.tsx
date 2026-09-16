@@ -2,7 +2,7 @@
 // Matches the reference: white/light bar, black organic hill rising from
 // center for the + button, dark icons with labels underneath, wavy
 // underline for active state.
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, Dimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import Svg, { Path, Circle, Line, Rect } from 'react-native-svg';
@@ -18,7 +18,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
-import { motion } from '@/lib/tokens';
+import { AnimatedDrawIcon, CTA_ICONS } from '@/components/AnimatedDrawIcon';
 import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { useAuth } from '@/lib/auth';
@@ -26,7 +26,6 @@ import { useAuth } from '@/lib/auth';
 const { width: SCREEN_W } = Dimensions.get('window');
 
 const TAP = 48;
-const MORPH_MS = motion.duration;
 const SOFT_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
 const BAR_HEIGHT = 90;
 const CUTOUT_RADIUS = 36;
@@ -146,42 +145,7 @@ function InsightsIcon({ active, ink, inkSecondary }: { active: boolean; ink: str
   );
 }
 
-// Center icons (adaptive to theme)
-function PlusIcon({ color }: { color: string }) {
-  return (
-    <Svg viewBox="0 0 24 24" width={26} height={26}>
-      <Line x1="12" y1="5" x2="12" y2="19" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
-      <Line x1="5" y1="12" x2="19" y2="12" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function DeadlineFlagBig({ color }: { color: string }) {
-  return (
-    <Svg viewBox="0 0 24 24" width={26} height={26}>
-      <Line x1="7" y1="4" x2="7" y2="20" stroke={color} strokeWidth={2} strokeLinecap="round" />
-      <Path d="M7 5 H17 L14.5 8.5 L17 12 H7" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </Svg>
-  );
-}
-
-function AskIcon({ color }: { color: string }) {
-  return (
-    <Svg viewBox="0 0 24 24" width={26} height={26}>
-      <Path d="M20 12 A8 8 0 1 1 12 4" stroke={color} strokeWidth={2} strokeLinecap="round" fill="none" />
-      <Path d="M16.5 3.5 L20 4.5 L19 8" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </Svg>
-  );
-}
-
-function UserIcon({ color }: { color: string }) {
-  return (
-    <Svg viewBox="0 0 24 24" width={24} height={24}>
-      <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth={2} fill="none" />
-      <Path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke={color} strokeWidth={2} strokeLinecap="round" fill="none" />
-    </Svg>
-  );
-}
+// Center icons — legacy components kept for reference, now using AnimatedDrawIcon
 
 // ─── Tab config ───
 // Focus, Insights, Rooms moved to SideDrawer header menu
@@ -193,11 +157,11 @@ const TABS = [
 ] as const;
 
 function getCenterSpec(pathname: string, ctaColor: string) {
-  if (pathname.includes('/deadlines')) return { label: 'Add deadline', Icon: DeadlineFlagBig, iconColor: ctaColor, route: '/(tabs)/deadlines', params: { compose: '1' } };
-  if (pathname.includes('/assistant')) return { label: 'Generate plan', Icon: AskIcon, iconColor: ctaColor, route: '/(tabs)/assistant', params: { action: 'new-plan' } };
-  if (pathname.includes('/profile')) return { label: 'Edit profile', Icon: UserIcon, iconColor: ctaColor, route: '/(tabs)/profile' };
-  if (pathname.includes('/courses')) return { label: 'Add course', Icon: PlusIcon, iconColor: ctaColor, route: '/(tabs)/courses', params: { compose: '1' } };
-  return { label: 'Add session', Icon: PlusIcon, iconColor: ctaColor, route: '/session/create' };
+  if (pathname.includes('/deadlines')) return { label: 'Add deadline', iconKey: 'flag', iconElements: CTA_ICONS.flag(ctaColor), route: '/(tabs)/deadlines', params: { compose: '1' } };
+  if (pathname.includes('/assistant')) return { label: 'Generate plan', iconKey: 'sparkle', iconElements: CTA_ICONS.sparkle(ctaColor), route: '/(tabs)/assistant', params: { action: 'new-plan' } };
+  if (pathname.includes('/profile')) return { label: 'Edit profile', iconKey: 'user', iconElements: CTA_ICONS.user(ctaColor), route: '/(tabs)/profile' };
+  if (pathname.includes('/courses')) return { label: 'Add course', iconKey: 'plus', iconElements: CTA_ICONS.plus(ctaColor), route: '/(tabs)/courses', params: { compose: '1' } };
+  return { label: 'Add session', iconKey: 'plus', iconElements: CTA_ICONS.plus(ctaColor), route: '/session/create' };
 }
 
 // ─── Wavy underline for active tab ───
@@ -249,25 +213,6 @@ export default function NavDock() {
   const ctaBg = t.isDark ? t.colors.fill : t.colors.ink;
   const ctaIconColor = t.isDark ? t.colors.fillInk : t.colors.white;
   const center = getCenterSpec(pathname, ctaIconColor);
-
-  // Center morph — bouncy transition between screen icons
-  const morph = useSharedValue(1);
-  const lastRoute = useRef(pathname);
-  useEffect(() => {
-    if (lastRoute.current === pathname) return;
-    lastRoute.current = pathname;
-    if (reduced) { morph.value = 1; return; }
-    morph.value = 0;
-    morph.value = withTiming(1, { duration: 350, easing: SOFT_EASE });
-  }, [pathname, reduced]);
-  const morphStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: 0.4 + 0.6 * morph.value },
-      { rotate: `${(1 - morph.value) * 90}deg` },
-      { translateY: (1 - morph.value) * -6 },
-    ],
-    opacity: 0.2 + 0.8 * morph.value,
-  }));
 
   return (
     <View style={styles.outer}>
@@ -341,9 +286,13 @@ export default function NavDock() {
         accessibilityLabel={center.label}
       >
         <View style={[styles.centerBtn, { backgroundColor: ctaBg, shadowColor: ctaBg }]}>
-          <Animated.View style={morphStyle}>
-            <center.Icon color={center.iconColor} />
-          </Animated.View>
+          <AnimatedDrawIcon
+            elements={center.iconElements}
+            size={26}
+            color={ctaIconColor}
+            drawKey={center.iconKey}
+            duration={350}
+          />
         </View>
       </Pressable>
     </View>
