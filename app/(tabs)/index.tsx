@@ -21,7 +21,6 @@ import Animated, {
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { StickyNote } from '@/components/StickyNote';
-import { GridBackground } from '@/components/GridBackground';
 import { ElevatedSurface } from '@/components/ElevatedSurface';
 import {
   CornerStamp,
@@ -246,16 +245,16 @@ export default function ScheduleScreen() {
 
   if (isLoading) {
     return (
-      <GridBackground style={[s.container, { paddingTop: insets.top }]}>
+      <View style={[s.container, { paddingTop: insets.top }]}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={t.colors.ink} />
         </View>
-      </GridBackground>
+      </View>
     );
   }
 
   return (
-    <GridBackground style={[s.container, { paddingTop: insets.top }]}>
+    <View style={[s.container, { paddingTop: insets.top }]}>
       <GreetingBanner name={firstName} />
 
       <View style={s.header}>
@@ -486,7 +485,7 @@ export default function ScheduleScreen() {
         )}
       </ScrollView>
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
-    </GridBackground>
+    </View>
   );
 }
 
