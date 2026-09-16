@@ -110,7 +110,7 @@ export const getRoomMembers = query({
         .map(async (room) => {
           const user = await ctx.db.get(room.userId);
           return {
-            userId: room.userId,
+            userId: room.shareFreeTime ? room.userId : ('anon_' + room._id) as string,
             name: room.shareFreeTime ? user?.name ?? 'Anonymous' : 'Anonymous',
             department: room.shareFreeTime ? user?.department ?? '' : '',
             shareFreeTime: room.shareFreeTime,

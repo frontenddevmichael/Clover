@@ -55,6 +55,7 @@ export function EmptyState({ title, message, scene = 'calendar', actionLabel, on
           onPress={onAction}
           activeOpacity={0.7}
           accessibilityRole="button"
+          accessibilityLabel={actionLabel}
         >
           <Text
             style={{

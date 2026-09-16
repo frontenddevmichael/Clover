@@ -1,10 +1,9 @@
-// Clover Logo — refined 5-leaf clover with draw-on stroke animation.
-// Each petal draws itself in sequentially via stroke-dashoffset, then the stem
-// draws down. The whole mark bounces gently at the end.
+// Clover Logo — Lucide clover icon with draw-on stroke animation.
+// Uses official Lucide SVG paths with sequential draw + fill animation.
 // Reduce motion: instant fade-in of the complete mark.
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,6 +17,7 @@ import Animated, {
   useReducedMotion,
   cancelAnimation,
 } from 'react-native-reanimated';
+import { Lucide } from '@react-native-vector-icons/lucide';
 import { useTheme } from '@/lib/theme';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -28,28 +28,20 @@ type CloverLogoProps = {
   color?: string;
 };
 
-// 5 heart-shaped petals radiating from center (50, 40)
-// Each petal is a closed bezier loop — more organic than ovals
-const PETAL_PATHS = [
-  // Top petal (pointing up)
-  'M 50 40 C 47 34, 40 24, 44 16 C 48 10, 52 10, 56 16 C 60 24, 53 34, 50 40 Z',
-  // Top-right petal
-  'M 50 40 C 54 35, 62 28, 70 30 C 76 32, 76 38, 70 42 C 62 46, 54 42, 50 40 Z',
-  // Bottom-right petal
-  'M 50 40 C 55 43, 64 50, 64 58 C 64 64, 58 66, 52 62 C 46 58, 48 46, 50 40 Z',
-  // Bottom-left petal
-  'M 50 40 C 45 43, 36 50, 36 58 C 36 64, 42 66, 48 62 C 54 58, 52 46, 50 40 Z',
-  // Top-left petal
-  'M 50 40 C 46 35, 38 28, 30 30 C 24 32, 24 38, 30 42 C 38 46, 46 42, 50 40 Z',
+// Official Lucide clover SVG paths (viewBox 0 0 24 24)
+// Path 1: stem line (bottom-left to top-right diagonal)
+// Path 2: 3 clover leaves (circles) + center stem
+// Path 3: second stem line (top-left to bottom-right diagonal)
+const LUCIDE_PATHS = [
+  'M16.17 7.83 2 22',
+  'M4.02 12a2.827 2.827 0 1 1 3.81-4.17A2.827 2.827 0 1 1 12 4.02a2.827 2.827 0 1 1 4.17 3.81A2.827 2.827 0 1 1 19.98 12a2.827 2.827 0 1 1-3.81 4.17A2.827 2.827 0 1 1 12 19.98a2.827 2.827 0 1 1-4.17-3.81A1 1 0 1 1 4 12',
+  'm7.83 7.83 8.34 8.34',
 ];
 
-const STEM = 'M 50 46 C 49 54, 47 62, 48 70';
+// Approximate path lengths for stroke-dasharray
+const PATH_LENGTHS = [28, 90, 12];
 
-// Stroke lengths for dash animation (approximate path lengths)
-const PETAL_LENGTHS = [68, 72, 72, 72, 72];
-const STEM_LENGTH = 28;
-
-const STAGGER = 140; // ms between petals
+const STAGGER = 160;
 
 export function CloverLogo({
   size = 80,
@@ -60,13 +52,12 @@ export function CloverLogo({
   const ink = color ?? t.colors.ink;
   const reduced = useReducedMotion() ?? false;
 
-  // Whole-mark bounce: 0.92 → 1.06 → 1
   const bounce = useSharedValue(!animated || reduced ? 1 : 0.92);
 
   useEffect(() => {
     if (!animated || reduced) return;
     bounce.value = withDelay(
-      STAGGER * 5 + 200,
+      STAGGER * 3 + 300,
       withSequence(
         withSpring(1.06, { damping: 12, stiffness: 300, mass: 0.8 }),
         withSpring(1, { damping: 14, stiffness: 200 })
@@ -80,30 +71,26 @@ export function CloverLogo({
   }));
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessible accessibilityLabel="Clover logo">
       <Animated.View style={bounceStyle}>
-        <Svg viewBox="0 0 100 80" width={size} height={size * 0.8}>
-          {PETAL_PATHS.map((d, i) => (
-            <DrawPetal
+        <Svg viewBox="0 0 24 24" width={size} height={size}>
+          {LUCIDE_PATHS.map((d, i) => (
+            <DrawPath
               key={i}
               d={d}
               index={i}
-              pathLength={PETAL_LENGTHS[i]}
+              pathLength={PATH_LENGTHS[i]}
               animated={animated && !reduced}
               ink={ink}
             />
           ))}
-          <DrawStem animated={animated && !reduced} ink={ink} />
-          {/* Center dot — always visible */}
-          <Circle cx="50" cy="40" r="2.5" fill={ink} />
         </Svg>
       </Animated.View>
     </View>
   );
 }
 
-// One petal that draws its stroke, then fills in
-function DrawPetal({
+function DrawPath({
   d,
   index,
   pathLength,
@@ -117,23 +104,21 @@ function DrawPetal({
   ink: string;
 }) {
   const progress = useSharedValue(animated ? 0 : 1);
-  const fillOpacity = useSharedValue(animated ? 0 : 0.18);
+  const fillOpacity = useSharedValue(animated ? 0 : 1);
 
   useEffect(() => {
     if (!animated) {
       progress.value = 1;
-      fillOpacity.value = 0.18;
+      fillOpacity.value = 1;
       return;
     }
-    // Draw stroke
     progress.value = withDelay(
       index * STAGGER,
-      withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) })
+      withTiming(1, { duration: 350, easing: Easing.out(Easing.cubic) })
     );
-    // Fill in after stroke completes
     fillOpacity.value = withDelay(
-      index * STAGGER + 200,
-      withTiming(0.18, { duration: 200, easing: Easing.out(Easing.cubic) })
+      index * STAGGER + 250,
+      withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) })
     );
     return () => {
       cancelAnimation(progress);
@@ -147,18 +132,27 @@ function DrawPetal({
   }));
 
   const fillProps = useAnimatedProps(() => ({
-    fillOpacity: fillOpacity.value,
+    fillOpacity: interpolate(fillOpacity.value, [0, 1], [0, 1]),
   }));
+
+  // Path 2 is the leaves (filled), paths 1 & 3 are stems (stroke only)
+  const isLeaves = index === 1;
 
   return (
     <>
-      {/* Fill layer (fades in after stroke) */}
-      <AnimatedPath d={d} fill={ink} animatedProps={fillProps} stroke="none" />
-      {/* Stroke layer (draws on) */}
+      {isLeaves && (
+        <AnimatedPath
+          d={d}
+          fill={ink}
+          animatedProps={fillProps}
+          stroke="none"
+          fillRule="evenodd"
+        />
+      )}
       <AnimatedPath
         d={d}
         stroke={ink}
-        strokeWidth={2.8}
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
@@ -169,62 +163,11 @@ function DrawPetal({
   );
 }
 
-// Stem draws down after petals
-function DrawStem({ animated, ink }: { animated: boolean; ink: string }) {
-  const progress = useSharedValue(animated ? 0 : 1);
-
-  useEffect(() => {
-    if (!animated) {
-      progress.value = 1;
-      return;
-    }
-    progress.value = withDelay(
-      STAGGER * 5,
-      withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) })
-    );
-    return () => cancelAnimation(progress);
-  }, [animated]);
-
-  const props = useAnimatedProps(() => ({
-    strokeDashoffset: interpolate(progress.value, [0, 1], [STEM_LENGTH, 0]),
-    opacity: progress.value > 0 ? 1 : 0,
-  }));
-
-  return (
-    <AnimatedPath
-      d={STEM}
-      stroke={ink}
-      strokeWidth={3}
-      strokeLinecap="round"
-      fill="none"
-      strokeDasharray={STEM_LENGTH}
-      animatedProps={props}
-    />
-  );
-}
-
-// Static mark — no animation, used in headers and small contexts
+// Static mark — Lucide icon component, used in headers and small contexts
 export function CloverMark({ size = 32, color }: { size?: number; color?: string }) {
   const t = useTheme();
   const ink = color ?? t.colors.ink;
-  return (
-    <Svg viewBox="0 0 100 80" width={size} height={size * 0.8}>
-      {PETAL_PATHS.map((d, i) => (
-        <Path
-          key={i}
-          d={d}
-          stroke={ink}
-          strokeWidth={2.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill={ink}
-          fillOpacity={0.18}
-        />
-      ))}
-      <Path d={STEM} stroke={ink} strokeWidth={3} strokeLinecap="round" fill="none" />
-      <Circle cx="50" cy="40" r="2.5" fill={ink} />
-    </Svg>
-  );
+  return <Lucide name="clover" size={size} color={ink} />;
 }
 
 const styles = StyleSheet.create({

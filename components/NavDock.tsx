@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Pressable, Dimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import Svg, { Path, Circle, Line } from 'react-native-svg';
+import Svg, { Path, Circle, Line, Rect } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -63,9 +63,9 @@ function useWorkloadLevel(): WorkloadLevel {
 const SW_ACTIVE = 2;
 const SW_IDLE = 1.6;
 
-function HomeIcon({ active }: { active: boolean }) {
+function HomeIcon({ active, ink, inkSecondary }: { active: boolean; ink: string; inkSecondary: string }) {
   const sw = active ? SW_ACTIVE : SW_IDLE;
-  const color = active ? '#1A1A1A' : '#6B7280';
+  const color = active ? ink : inkSecondary;
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
       <Path d="M4 11 L12 4 L20 11 V20 H4 Z" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -74,9 +74,9 @@ function HomeIcon({ active }: { active: boolean }) {
   );
 }
 
-function FlagIcon({ active }: { active: boolean }) {
+function FlagIcon({ active, ink, inkSecondary }: { active: boolean; ink: string; inkSecondary: string }) {
   const sw = active ? SW_ACTIVE : SW_IDLE;
-  const color = active ? '#1A1A1A' : '#6B7280';
+  const color = active ? ink : inkSecondary;
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
       <Line x1="6" y1="3" x2="6" y2="21" stroke={color} strokeWidth={sw} strokeLinecap="round" />
@@ -85,9 +85,9 @@ function FlagIcon({ active }: { active: boolean }) {
   );
 }
 
-function RoomsIcon({ active }: { active: boolean }) {
+function RoomsIcon({ active, ink, inkSecondary }: { active: boolean; ink: string; inkSecondary: string }) {
   const sw = active ? SW_ACTIVE : SW_IDLE;
-  const color = active ? '#1A1A1A' : '#6B7280';
+  const color = active ? ink : inkSecondary;
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
       <Circle cx="8" cy="8.5" r="3" stroke={color} strokeWidth={sw} fill="none" />
@@ -98,13 +98,38 @@ function RoomsIcon({ active }: { active: boolean }) {
   );
 }
 
-function AssistantIcon({ active }: { active: boolean }) {
+function AssistantIcon({ active, ink, inkSecondary }: { active: boolean; ink: string; inkSecondary: string }) {
   const sw = active ? SW_ACTIVE : SW_IDLE;
-  const color = active ? '#1A1A1A' : '#6B7280';
+  const color = active ? ink : inkSecondary;
   return (
     <Svg viewBox="0 0 24 24" width={22} height={22}>
       <Path d="M12 3 L14 9 L20 11 L14 13 L12 19 L10 13 L4 11 L10 9 Z" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       <Circle cx="18.5" cy="5.5" r="1" fill={color} />
+    </Svg>
+  );
+}
+
+function FocusIcon({ active, ink, inkSecondary }: { active: boolean; ink: string; inkSecondary: string }) {
+  const sw = active ? SW_ACTIVE : SW_IDLE;
+  const color = active ? ink : inkSecondary;
+  return (
+    <Svg viewBox="0 0 24 24" width={22} height={22}>
+      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={sw} fill="none" />
+      <Line x1="12" y1="12" x2="12" y2="7" stroke={color} strokeWidth={sw} strokeLinecap="round" />
+      <Line x1="12" y1="12" x2="16" y2="12" stroke={color} strokeWidth={sw} strokeLinecap="round" />
+      <Circle cx="12" cy="12" r="1.5" fill={color} />
+    </Svg>
+  );
+}
+
+function InsightsIcon({ active, ink, inkSecondary }: { active: boolean; ink: string; inkSecondary: string }) {
+  const sw = active ? SW_ACTIVE : SW_IDLE;
+  const color = active ? ink : inkSecondary;
+  return (
+    <Svg viewBox="0 0 24 24" width={22} height={22}>
+      <Rect x="3" y="14" width="4" height="7" rx="1" stroke={color} strokeWidth={sw} fill="none" />
+      <Rect x="10" y="9" width="4" height="12" rx="1" stroke={color} strokeWidth={sw} fill="none" />
+      <Rect x="17" y="4" width="4" height="17" rx="1" stroke={color} strokeWidth={sw} fill="none" />
     </Svg>
   );
 }
@@ -151,12 +176,16 @@ function AskIcon() {
 const TABS = [
   { key: 'index', label: 'Home', route: '/(tabs)', match: (p: string) => p === '/' || p === '/(tabs)' || p === '/(tabs)/', Icon: HomeIcon },
   { key: 'deadlines', label: 'Deadlines', route: '/(tabs)/deadlines', match: (p: string) => p.includes('/deadlines'), Icon: FlagIcon },
+  { key: 'focus', label: 'Focus', route: '/(tabs)/focus', match: (p: string) => p.includes('/focus'), Icon: FocusIcon },
+  { key: 'insights', label: 'Insights', route: '/(tabs)/insights', match: (p: string) => p.includes('/insights'), Icon: InsightsIcon },
   { key: 'social', label: 'Rooms', route: '/(tabs)/social', match: (p: string) => p.includes('/social'), Icon: RoomsIcon },
   { key: 'assistant', label: 'Assistant', route: '/(tabs)/assistant', match: (p: string) => p.includes('/assistant'), Icon: AssistantIcon },
 ] as const;
 
 function getCenterSpec(pathname: string) {
   if (pathname.includes('/deadlines')) return { label: 'Add deadline', Icon: DeadlineFlagBig, route: '/(tabs)/deadlines', params: { compose: '1' } };
+  if (pathname.includes('/focus')) return { label: 'Add session', Icon: PlusIcon, route: '/session/create' };
+  if (pathname.includes('/insights')) return { label: 'Add session', Icon: PlusIcon, route: '/session/create' };
   if (pathname.includes('/social')) return { label: 'Sharing settings', Icon: ShareOverlapBig, route: '/(tabs)/social', params: { share: '1' } };
   if (pathname.includes('/assistant')) return { label: 'Generate new plan', Icon: AskIcon, route: '/(tabs)/assistant', params: { action: 'new-plan' } };
   if (pathname.includes('/courses')) return { label: 'Add course', Icon: PlusIcon, route: '/(tabs)/courses', params: { compose: '1' } };
@@ -167,7 +196,7 @@ function getCenterSpec(pathname: string) {
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const WAVE_LEN = 36;
 
-function SketchUnderline({ active, reduced }: { active: boolean; reduced: boolean }) {
+function SketchUnderline({ active, reduced, ink }: { active: boolean; reduced: boolean; ink: string }) {
   const progress = useSharedValue(active ? 1 : 0);
   useEffect(() => {
     if (active) {
@@ -188,7 +217,7 @@ function SketchUnderline({ active, reduced }: { active: boolean; reduced: boolea
     <Svg viewBox="0 0 28 6" width={28} height={6} style={{ marginTop: 1 }}>
       <AnimatedPath
         d="M 2 3.5 C 7 2.2, 12 4.1, 17 2.8 S 23.5 3.4, 26 3"
-        stroke="#1A1A1A"
+        stroke={ink}
         strokeWidth={1.8}
         strokeLinecap="round"
         fill="none"
@@ -252,7 +281,7 @@ export default function NavDock() {
             L 0 ${BAR_HEIGHT}
             Z
           `}
-          fill="white"
+          fill={t.colors.elevated}
         />
         {/* Visible stroke along the cutout edge */}
         <Path
@@ -262,7 +291,7 @@ export default function NavDock() {
             A ${CUTOUT_RADIUS} ${CUTOUT_RADIUS} 0 0 0 ${SCREEN_W * 0.5 + CUTOUT_RADIUS} ${CUTOUT_RADIUS + 4}
             C ${SCREEN_W * 0.5 + CUTOUT_RADIUS} 4, ${SCREEN_W * 0.5 + CUTOUT_RADIUS + 4} 4, ${SCREEN_W * 0.5 + CUTOUT_RADIUS + 4} 4
           `}
-          stroke="#D1D5DB"
+          stroke={t.colors.hairline}
           strokeWidth={1}
           fill="none"
         />
@@ -271,14 +300,14 @@ export default function NavDock() {
       {/* Icons positioned on top of the bar */}
       <View style={styles.iconsOverlay}>
         <View style={styles.leftTabs}>
-          {TABS.slice(0, 2).map((tab) => (
-            <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} />
+          {TABS.slice(0, 3).map((tab) => (
+            <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} ink={t.colors.ink} inkSecondary={t.colors.inkSecondary} inkFaint={t.colors.inkFaint} />
           ))}
         </View>
         <View style={styles.centerSpacer} />
         <View style={styles.rightTabs}>
-          {TABS.slice(2).map((tab) => (
-            <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} />
+          {TABS.slice(3).map((tab) => (
+            <TabIcon key={tab.key} tab={tab} active={activeKey === tab.key} reduced={reduced} ink={t.colors.ink} inkSecondary={t.colors.inkSecondary} inkFaint={t.colors.inkFaint} />
           ))}
         </View>
       </View>
@@ -309,10 +338,16 @@ function TabIcon({
   tab,
   active,
   reduced,
+  ink,
+  inkSecondary,
+  inkFaint,
 }: {
   tab: (typeof TABS)[number];
   active: boolean;
   reduced: boolean;
+  ink: string;
+  inkSecondary: string;
+  inkFaint: string;
 }) {
   const router = useRouter();
   const styles = useStyles(makeStyles);
@@ -325,9 +360,9 @@ function TabIcon({
       accessibilityState={{ selected: active }}
       accessibilityLabel={tab.label}
     >
-      <tab.Icon active={active} />
-      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{tab.label}</Text>
-      <SketchUnderline active={active} reduced={reduced} />
+      <tab.Icon active={active} ink={ink} inkSecondary={inkSecondary} />
+      <Text style={[styles.tabLabel, { color: active ? ink : inkFaint }, active && styles.tabLabelActive]}>{tab.label}</Text>
+      <SketchUnderline active={active} reduced={reduced} ink={ink} />
     </TouchableOpacity>
   );
 }
@@ -376,11 +411,9 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   tabLabel: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#9CA3AF',
     marginTop: 1,
   },
   tabLabelActive: {
-    color: '#1A1A1A',
     fontWeight: '600',
   },
   centerHit: {
@@ -398,10 +431,10 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: theme.radii.pill,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

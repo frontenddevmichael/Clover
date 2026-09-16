@@ -1,4 +1,4 @@
-// Onboarding — splash → welcome → signup → profile → passcode → tabs
+// Onboarding — splash → welcome → signup → profile → passcode → walkthrough → tabs
 // Proper error handling, passcode confirmation. Passcode changes happen in
 // Settings (they require the current passcode), not here.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -21,14 +21,17 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
+  withDelay,
   Easing,
   interpolate,
 } from 'react-native-reanimated';
+import Svg, { Rect, Circle, Line } from 'react-native-svg';
 import { CloverLogo } from '@/components/CloverLogo';
 import { useAuth } from '@/lib/auth';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
-import { useMutation } from 'convex/react';
-import { api } from '../convex/_generated/api';
+import { ThickFrame, CornerStamp, BoldDivider, GeoDots } from '@/components/neoBrutalist';
+import { Walkthrough, hasSeenWalkthrough } from '@/components/Walkthrough';
+import { isValidEmail } from '@/lib/validators';
 
 const { width } = Dimensions.get('window');
 const SPRING_SNAPPY = { damping: 20, stiffness: 200, mass: 0.8 };
@@ -42,7 +45,8 @@ type Step =
   | 'signup'
   | 'profile'
   | 'passcode'
-  | 'confirmPasscode';
+  | 'confirmPasscode'
+  | 'walkthrough';
 
 // ─── Staggered fade-in item ─────────────────────────────
 function StaggerItem({
@@ -91,17 +95,11 @@ function friendlyError(msg: string): string {
   return 'Something went wrong. Please try again.';
 }
 
-// ─── Email validation ───────────────────────────────────
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
 export default function OnboardingScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const router = useRouter();
   const { signup, login, userId } = useAuth();
-  const seedDemoData = useMutation(api.seed.seedDemoData);
 
   const [step, setStep] = useState<Step>('splash');
   const [email, setEmail] = useState('');
@@ -116,6 +114,7 @@ export default function OnboardingScreen() {
   const screenOpacity = useSharedValue(1);
   const screenScale = useSharedValue(1);
   const isTransitioning = useRef(false);
+  const isSigningUp = useRef(false);
 
   const splashOpacity = useSharedValue(0);
   const splashScale = useSharedValue(0.8);
@@ -127,9 +126,13 @@ export default function OnboardingScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+  // If already signed in, check walkthrough then go to tabs
   useEffect(() => {
-    if (userId) {
-      router.replace('/(tabs)');
+    if (userId && !isSigningUp.current) {
+      hasSeenWalkthrough().then((seen) => {
+        if (seen) router.replace('/(tabs)');
+        // If not seen, stay on onboarding (user will reach walkthrough after signup)
+      });
     }
   }, [userId]);
 
@@ -204,8 +207,9 @@ export default function OnboardingScreen() {
     }
 
     setLoading(true);
+    isSigningUp.current = true;
     try {
-      const newUserId = await signup({
+      await signup({
         email: email.trim().toLowerCase(),
         name: name.trim(),
         institution: institution.trim(),
@@ -213,12 +217,20 @@ export default function OnboardingScreen() {
         level: parseInt(level, 10),
         passcode,
       });
-      // Seed realistic data so the app feels populated on first load
-      await seedDemoData({ userId: newUserId }).catch(() => {});
+      // Skip transitionTo (isTransitioning guard may block it) — go straight to walkthrough
+      screenOpacity.value = withTiming(0, { duration: FADE_OUT, easing: Easing.in(Easing.cubic) });
+      screenScale.value = withTiming(0.97, { duration: FADE_OUT, easing: Easing.in(Easing.cubic) });
+      setTimeout(() => {
+        setStep('walkthrough');
+        screenOpacity.value = withTiming(1, { duration: FADE_IN, easing: Easing.out(Easing.cubic) });
+        screenScale.value = withSpring(1, SPRING_SNAPPY);
+        isSigningUp.current = false;
+      }, FADE_OUT + 30);
     } catch (e: any) {
       const msg = friendlyError(e.message || '');
       Alert.alert('Account creation failed', msg);
       resetForm();
+      isSigningUp.current = false;
     }
     setLoading(false);
   }, [email, name, institution, department, level, passcode, signup, resetForm]);
@@ -227,9 +239,19 @@ export default function OnboardingScreen() {
   if (step === 'splash') {
     return (
       <View style={styles.splash}>
+        {/* Background decor */}
+        <View style={styles.splashDecorTop}>
+          <GeoDots rows={3} cols={20} dotSize={3} gap={8} color={t.colors.neutral350} />
+        </View>
+        <View style={styles.splashDecorBottom}>
+          <GeoDots rows={2} cols={16} dotSize={2} gap={10} color={t.colors.neutral200} />
+        </View>
+
         <Animated.View style={[styles.splashContent, splashAnim]}>
+          <CornerStamp label="CLOVER" color={t.colors.neutral950} textColor={t.colors.fillInk} rotation={-8} style={styles.splashStamp} />
           <CloverLogo size={220} animated />
           <Text style={styles.splashTitle}>Clover</Text>
+          <BoldDivider shape="diamond" color={t.colors.neutral950} style={{ marginTop: 16, marginBottom: 8 }} />
           <Text style={styles.splashSubtitle}>Study planner for Nigerian students</Text>
         </Animated.View>
       </View>
@@ -240,11 +262,15 @@ export default function OnboardingScreen() {
   if (step === 'welcome') {
     return (
       <Animated.View style={[styles.container, animWrap]}>
+        <View style={styles.welcomeDecor}>
+          <GeoDots rows={4} cols={24} dotSize={3} gap={8} color={t.colors.neutral200} />
+        </View>
         <View style={styles.top}>
           <StaggerItem index={0} visible={step === 'welcome'}>
             <View style={styles.logoWrap}><CloverLogo size={100} animated={false} /></View>
           </StaggerItem>
           <StaggerItem index={1} visible={step === 'welcome'}>
+            <CornerStamp label="HEY!" color={t.colors.fill} textColor={t.colors.fillInk} rotation={-6} style={styles.welcomeStamp} />
             <Text style={styles.welcomeTitle}>Welcome to Clover</Text>
           </StaggerItem>
           <StaggerItem index={2} visible={step === 'welcome'}>
@@ -276,33 +302,39 @@ export default function OnboardingScreen() {
             <TouchableOpacity onPress={() => transitionTo('welcome')} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
+            <CornerStamp label="SIGN IN" color={t.colors.neutral950} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Welcome back</Text>
+            <BoldDivider shape="circle" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>Sign in with your email and passcode</Text>
 
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@unilag.edu.ng"
-              placeholderTextColor={t.colors.neutral300}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              accessibilityLabel="Email address"
-            />
+            <ThickFrame borderWidth={2} style={styles.formFrame}>
+              <View style={styles.formInner}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@unilag.edu.ng"
+                  placeholderTextColor={t.colors.neutral300}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  accessibilityLabel="Email address"
+                />
 
-            <Text style={styles.label}>Passcode</Text>
-            <TextInput
-              style={styles.input}
-              value={passcode}
-              onChangeText={setPasscode}
-              placeholder="4+ digits"
-              placeholderTextColor={t.colors.neutral300}
-              keyboardType="number-pad"
-              secureTextEntry
-              maxLength={8}
-              accessibilityLabel="Passcode"
-            />
+                <Text style={styles.label}>Passcode</Text>
+                <TextInput
+                  style={styles.input}
+                  value={passcode}
+                  onChangeText={setPasscode}
+                  placeholder="4+ digits"
+                  placeholderTextColor={t.colors.neutral300}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={8}
+                  accessibilityLabel="Passcode"
+                />
+              </View>
+            </ThickFrame>
 
             <TouchableOpacity
               style={[styles.primaryBtn, loading && styles.disabledBtn]}
@@ -329,14 +361,20 @@ export default function OnboardingScreen() {
             <TouchableOpacity onPress={() => transitionTo('welcome')} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
+            <CornerStamp label="CREATE" color={t.colors.fill} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Create your account</Text>
+            <BoldDivider shape="square" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>Start planning your semester</Text>
 
-            <Text style={styles.label}>Full name</Text>
-            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Adaobi Nwosu" placeholderTextColor={t.colors.neutral300} accessibilityLabel="Full name" />
+            <ThickFrame borderWidth={2} style={styles.formFrame}>
+              <View style={styles.formInner}>
+                <Text style={styles.label}>Full name</Text>
+                <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Adaobi Nwosu" placeholderTextColor={t.colors.neutral300} accessibilityLabel="Full name" />
 
-            <Text style={styles.label}>Email</Text>
-            <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="you@unilag.edu.ng" placeholderTextColor={t.colors.neutral300} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Email address" />
+                <Text style={styles.label}>Email</Text>
+                <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="you@unilag.edu.ng" placeholderTextColor={t.colors.neutral300} keyboardType="email-address" autoCapitalize="none" accessibilityLabel="Email address" />
+              </View>
+            </ThickFrame>
 
             <TouchableOpacity
               style={styles.primaryBtn}
@@ -367,23 +405,29 @@ export default function OnboardingScreen() {
             <TouchableOpacity onPress={() => transitionTo('signup')} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
+            <CornerStamp label="YOU" color={t.colors.workloadBalancedBg} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Your university</Text>
+            <BoldDivider shape="diamond" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>Help us tailor your experience</Text>
 
-            <Text style={styles.label}>Institution</Text>
-            <TextInput style={styles.input} value={institution} onChangeText={setInstitution} placeholder="e.g. University of Lagos" placeholderTextColor={t.colors.neutral300} autoCapitalize="words" accessibilityLabel="Institution" />
+            <ThickFrame borderWidth={2} style={styles.formFrame}>
+              <View style={styles.formInner}>
+                <Text style={styles.label}>Institution</Text>
+                <TextInput style={styles.input} value={institution} onChangeText={setInstitution} placeholder="e.g. University of Lagos" placeholderTextColor={t.colors.neutral300} autoCapitalize="words" accessibilityLabel="Institution" />
 
-            <Text style={styles.label}>Department</Text>
-            <TextInput style={styles.input} value={department} onChangeText={setDepartment} placeholder="e.g. Computer Science" placeholderTextColor={t.colors.neutral300} autoCapitalize="words" accessibilityLabel="Department" />
+                <Text style={styles.label}>Department</Text>
+                <TextInput style={styles.input} value={department} onChangeText={setDepartment} placeholder="e.g. Computer Science" placeholderTextColor={t.colors.neutral300} autoCapitalize="words" accessibilityLabel="Department" />
 
-            <Text style={styles.label}>Level</Text>
-            <View style={styles.levelRow}>
-              {['100', '200', '300', '400', '500'].map((l) => (
-                <TouchableOpacity key={l} style={[styles.levelBtn, level === l && styles.levelBtnActive]} onPress={() => setLevel(l)} accessibilityRole="button" accessibilityLabel={`Level ${l}`} accessibilityState={{ selected: level === l }}>
-                  <Text style={[styles.levelText, level === l && styles.levelTextActive]}>{l}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                <Text style={styles.label}>Level</Text>
+                <View style={styles.levelRow}>
+                  {['100', '200', '300', '400', '500'].map((l) => (
+                    <TouchableOpacity key={l} style={[styles.levelBtn, level === l && styles.levelBtnActive]} onPress={() => setLevel(l)} accessibilityRole="button" accessibilityLabel={`Level ${l}`} accessibilityState={{ selected: level === l }}>
+                      <Text style={[styles.levelText, level === l && styles.levelTextActive]}>{l}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </ThickFrame>
 
             <TouchableOpacity
               style={styles.primaryBtn}
@@ -413,11 +457,17 @@ export default function OnboardingScreen() {
             <TouchableOpacity onPress={() => transitionTo('profile')} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
+            <CornerStamp label="SECURE" color={t.colors.workloadOverloadedBg} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Set a passcode</Text>
+            <BoldDivider shape="circle" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>At least 4 digits to secure your account</Text>
 
-            <Text style={styles.label}>Passcode</Text>
-            <TextInput style={styles.input} value={passcode} onChangeText={setPasscode} placeholder="4+ digits" placeholderTextColor={t.colors.neutral300} keyboardType="number-pad" secureTextEntry maxLength={8} accessibilityLabel="Passcode" />
+            <ThickFrame borderWidth={2} style={styles.formFrame}>
+              <View style={styles.formInner}>
+                <Text style={styles.label}>Passcode</Text>
+                <TextInput style={styles.input} value={passcode} onChangeText={setPasscode} placeholder="4+ digits" placeholderTextColor={t.colors.neutral300} keyboardType="number-pad" secureTextEntry maxLength={8} accessibilityLabel="Passcode" />
+              </View>
+            </ThickFrame>
 
             <TouchableOpacity
               style={styles.primaryBtn}
@@ -447,11 +497,17 @@ export default function OnboardingScreen() {
             <TouchableOpacity onPress={() => { resetForm(); transitionTo('passcode'); }} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
+            <CornerStamp label="CONFIRM" color={t.colors.fill} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Confirm passcode</Text>
+            <BoldDivider shape="diamond" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>Enter your passcode again</Text>
 
-            <Text style={styles.label}>Passcode</Text>
-            <TextInput style={styles.input} value={confirmPasscode} onChangeText={setConfirmPasscode} placeholder="4+ digits" placeholderTextColor={t.colors.neutral300} keyboardType="number-pad" secureTextEntry maxLength={8} accessibilityLabel="Confirm passcode" />
+            <ThickFrame borderWidth={2} style={styles.formFrame}>
+              <View style={styles.formInner}>
+                <Text style={styles.label}>Passcode</Text>
+                <TextInput style={styles.input} value={confirmPasscode} onChangeText={setConfirmPasscode} placeholder="4+ digits" placeholderTextColor={t.colors.neutral300} keyboardType="number-pad" secureTextEntry maxLength={8} accessibilityLabel="Confirm passcode" />
+              </View>
+            </ThickFrame>
 
             <TouchableOpacity
               style={[styles.primaryBtn, loading && styles.disabledBtn]}
@@ -475,6 +531,14 @@ export default function OnboardingScreen() {
       </Animated.View>
     );
   }
+
+  // ─── WALKTHROUGH ───────────────────────────────────────
+  if (step === 'walkthrough') {
+    return (
+      <Walkthrough onComplete={() => router.replace('/(tabs)')} />
+    );
+  }
+
   // Fallback — should never reach here
   return null;
 }
@@ -482,15 +546,23 @@ export default function OnboardingScreen() {
 const makeStyles = (theme: Theme) => StyleSheet.create({
   splash: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.canvas },
   splashContent: { alignItems: 'center' },
+  splashDecorTop: { position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', opacity: 0.5 },
+  splashDecorBottom: { position: 'absolute', bottom: 80, left: 0, right: 0, alignItems: 'center', opacity: 0.4 },
+  splashStamp: { position: 'absolute', top: -40, right: -20, zIndex: 10 },
   splashTitle: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.neutral900, marginTop: theme.spacing[5], letterSpacing: -1 },
   splashSubtitle: { fontSize: theme.typography.body, color: theme.colors.inkSecondary, marginTop: theme.spacing[2] },
   container: { flex: 1, backgroundColor: theme.colors.canvas },
   top: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: theme.spacing[8] },
   logoWrap: { alignItems: 'center', marginBottom: theme.spacing[2] },
   bottom: { paddingHorizontal: theme.spacing[6], paddingBottom: theme.spacing[12], gap: theme.spacing[3] },
+  welcomeDecor: { position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', opacity: 0.3 },
+  welcomeStamp: { position: 'absolute', top: -30, right: -10, zIndex: 10 },
   welcomeTitle: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.neutral900, textAlign: 'center', marginTop: theme.spacing[5] },
   welcomeSubtitle: { fontSize: theme.typography.body, color: theme.colors.inkSecondary, textAlign: 'center', marginTop: theme.spacing[2.5], lineHeight: theme.spacing[6], paddingHorizontal: theme.spacing[4] },
-  formScroll: { padding: theme.spacing[6], paddingTop: theme.spacing[15] },
+  formScroll: { padding: theme.spacing[6], flexGrow: 1, justifyContent: 'center' },
+  formStamp: { position: 'absolute', top: -8, right: 0, zIndex: 10 },
+  formFrame: { borderRadius: 4, marginTop: theme.spacing[4] },
+  formInner: { padding: theme.spacing[5] },
   backBtn: { marginBottom: theme.spacing[6] },
   backText: { fontSize: theme.typography.secondary, color: theme.colors.inkSecondary, fontWeight: '500' },
   formTitle: { fontSize: theme.typography.display, fontWeight: '700', color: theme.colors.neutral900 },

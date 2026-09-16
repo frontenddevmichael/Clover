@@ -45,6 +45,18 @@ export const signup = mutation({
 
     // Issue an opaque session token; the client stores this, never the userId.
     const { token, expiresAt } = await createSessionForUser(ctx, userId);
+
+    // Create default notification preferences (FR25–27)
+    await ctx.db.insert('notificationPreferences', {
+      userId,
+      sessionReminders: true,
+      deadlineReminders: true,
+      sessionLeadMinutes: 15,
+      deadlineLeadHours: 24,
+      quietHoursStart: '22:00',
+      quietHoursEnd: '07:00',
+    });
+
     return { userId, token, expiresAt };
   },
 });
@@ -163,6 +175,16 @@ export const updateProfile = mutation({
 export const deleteAccount = mutation({
   args: { id: v.id('users') },
   handler: async (ctx, args) => {
+    // Ownership check — only the account owner can delete
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity || !identity.email) throw new Error('Not authenticated');
+    const caller = await ctx.db
+      .query('users')
+      .withIndex('by_email', (q) => q.eq('email', identity.email!))
+      .unique();
+    if (!caller || caller._id !== args.id) {
+      throw new Error('Unauthorized: cannot delete another user account');
+    }
     const courses = await ctx.db
       .query('courses')
       .withIndex('by_user', (q) => q.eq('userId', args.id))

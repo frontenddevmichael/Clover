@@ -5,10 +5,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "scheme": "clover",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.clover.studyplanner"
+      "bundleIdentifier": "com.clover.studyplanner",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID for quick sign-in"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +21,8 @@
         "backgroundColor": "#F7F7F8"
       },
       "package": "com.clover.studyplanner",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["RECEIVE_BOOT_COMPLETED", "VIBRATE", "SCHEDULE_EXACT_ALARM", "READ_CALENDAR", "WRITE_CALENDAR"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -25,6 +30,7 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "@react-native-vector-icons/lucide",
       [
         "expo-splash-screen",
         {
@@ -33,7 +39,35 @@
           "resizeMode": "contain",
           "backgroundColor": "#F7F7F8"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": [],
+          "enableHeadlessTasks": true
+        }
+      ],
+      "expo-local-authentication",
+      "expo-calendar",
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "TodayWidget",
+              "displayName": "Today's Schedule",
+              "description": "Shows your sessions and deadlines for today",
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"]
+            }
+          ]
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cc11a29d-1cd5-4fc4-a00b-247644c4ed56"
+      }
+    }
   }
 }

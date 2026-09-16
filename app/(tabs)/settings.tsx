@@ -9,21 +9,31 @@ import {
   Alert,
   TextInput,
   Switch,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { useTheme, useStyles, type Theme } from '@/lib/theme';
+import { useTheme, useStyles, type Theme, useThemeState } from '@/lib/theme';
 import { Card } from '@/components/Card';
 import { CloverMark } from '@/components/CloverLogo';
 import { Button } from '@/components/Button';
 import { IconCalendar } from '@/components/Illustrations';
 import { useAuth } from '@/lib/auth';
+import { ThickFrame, BoldDivider, CornerStamp, GeoDots } from '@/components/neoBrutalist';
+import { Walkthrough } from '@/components/Walkthrough';
+import { useToast } from '@/components/Toast';
+import { isBiometricAvailable, isBiometricEnrolled, isBiometricEnabled, setBiometricEnabled, getBiometricTypeLabel } from '@/lib/biometrics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { requestCalendarAccess, isCalendarGranted } from '@/lib/calendar';
+import * as SecureStore from 'expo-secure-store';
 
 export default function SettingsScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { appearance, setAppearance } = useThemeState();
   const { userId, logout, changePasscode } = useAuth();
   const user = useQuery(api.users.getById, userId ? { userId } : 'skip');
   const notifPrefs = useQuery(api.notifications.getPreferences, userId ? { userId } : 'skip');
@@ -71,9 +81,9 @@ export default function SettingsScreen() {
         department: department.trim(),
         level: parseInt(level, 10) || 100,
       });
-      Alert.alert('Saved', 'Your profile has been updated.');
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Could not save your profile.');
+      toast.success('Profile updated');
+    } catch {
+      Alert.alert('Error', 'Could not save your profile.');
     }
     setSavingProfile(false);
   };
@@ -84,6 +94,53 @@ export default function SettingsScreen() {
   const [newPasscode, setNewPasscode] = useState('');
   const [confirmPc, setConfirmPc] = useState('');
   const [savingPasscode, setSavingPasscode] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Biometric');
+  const [calendarSync, setCalendarSync] = useState(false);
+  const toast = useToast();
+
+  // Check biometric availability
+  useEffect(() => {
+    (async () => {
+      const available = await isBiometricAvailable();
+      const enrolled = await isBiometricEnrolled();
+      if (available && enrolled) {
+        const label = await getBiometricTypeLabel();
+        const enabled = await isBiometricEnabled();
+        setBiometricLabel(label);
+        setBiometricAvailable(true);
+        setBiometricEnabledState(enabled);
+      }
+    })();
+  }, []);
+
+  const toggleBiometric = async (value: boolean) => {
+    await setBiometricEnabled(value);
+    setBiometricEnabledState(value);
+    toast.success(value ? `${biometricLabel} enabled` : `${biometricLabel} disabled`);
+  };
+
+  // ── Calendar sync ──
+  useEffect(() => {
+    SecureStore.getItemAsync('clover_calendar_sync').then((v) => {
+      setCalendarSync(v === 'true');
+    });
+  }, []);
+
+  const toggleCalendarSync = async (value: boolean) => {
+    if (value) {
+      const granted = await requestCalendarAccess();
+      if (!granted) {
+        toast.success('Calendar permission denied');
+        return;
+      }
+    }
+    setCalendarSync(value);
+    await SecureStore.setItemAsync('clover_calendar_sync', value ? 'true' : 'false');
+    toast.success(value ? 'Calendar sync enabled' : 'Calendar sync disabled');
+  };
 
   const handleChangePasscode = async () => {
     if (!currentPasscode || !newPasscode) {
@@ -102,20 +159,20 @@ export default function SettingsScreen() {
     setSavingPasscode(true);
     try {
       await changePasscode(currentPasscode, newPasscode);
-      Alert.alert('Passcode updated', 'Your passcode has been changed.');
+      toast.success('Passcode updated');
       setCurrentPasscode('');
       setNewPasscode('');
       setConfirmPc('');
       setShowPasscodeForm(false);
-    } catch (e: any) {
-      Alert.alert('Could not update', e.message || 'Please try again.');
+    } catch {
+      Alert.alert('Could not update', 'Please try again.');
       setCurrentPasscode('');
     }
     setSavingPasscode(false);
   };
 
   // ── Notification preferences ──
-  const handleNotifPrefChange = async (key: string, value: any) => {
+  const handleNotifPrefChange = async (key: string, value: boolean | number | string) => {
     if (!userId) return;
     const current = notifPrefs ?? {};
     try {
@@ -163,7 +220,7 @@ export default function SettingsScreen() {
     : '?';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
@@ -283,6 +340,36 @@ export default function SettingsScreen() {
           </Card>
         </TouchableOpacity>
 
+        {/* Appearance */}
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <Card style={styles.card}>
+          <View style={styles.appearanceRow}>
+            {(['system', 'light', 'dark'] as const).map((opt) => (
+              <TouchableOpacity
+                key={opt}
+                style={[
+                  styles.appearanceBtn,
+                  appearance === opt && { backgroundColor: t.colors.fill },
+                ]}
+                onPress={() => setAppearance(opt)}
+                activeOpacity={0.7}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: appearance === opt }}
+                accessibilityLabel={opt === 'system' ? 'Follow system' : opt === 'light' ? 'Light mode' : 'Dark mode'}
+              >
+                <Text
+                  style={[
+                    styles.appearanceBtnText,
+                    { color: appearance === opt ? t.colors.fillInk : t.colors.inkSecondary },
+                  ]}
+                >
+                  {opt === 'system' ? 'System' : opt === 'light' ? 'Light' : 'Dark'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
+
         {/* Notifications */}
         <Text style={styles.sectionTitle}>Notifications</Text>
         <Card style={styles.card}>
@@ -321,9 +408,47 @@ export default function SettingsScreen() {
             <Text style={styles.value}>{notifPrefs?.deadlineLeadHours ?? 24}h</Text>
           </View>
         </Card>
+        <Card style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Quiet hours start</Text>
+            <Text style={styles.value}>{notifPrefs?.quietHoursStart ?? '22:00'}</Text>
+          </View>
+        </Card>
+
+        {/* Calendar */}
+        <Text style={styles.sectionTitle}>Calendar</Text>
+        <Card style={styles.card}>
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Sync to device calendar</Text>
+              <Text style={[styles.value, { marginTop: 2 }]}>New sessions appear in your calendar</Text>
+            </View>
+            <Switch
+              value={calendarSync}
+              onValueChange={toggleCalendarSync}
+              trackColor={{ false: t.colors.neutral200, true: t.colors.fill }}
+              thumbColor={calendarSync ? t.colors.fillInk : t.colors.neutral500}
+              accessibilityLabel="Sync sessions to device calendar"
+            />
+          </View>
+        </Card>
+        <Card style={styles.card}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Quiet hours end</Text>
+            <Text style={styles.value}>{notifPrefs?.quietHoursEnd ?? '07:00'}</Text>
+          </View>
+        </Card>
 
         {/* Account */}
         <Text style={styles.sectionTitle}>Account</Text>
+        <TouchableOpacity onPress={() => setShowTutorial(true)} accessibilityRole="button" accessibilityLabel="View tutorial">
+          <Card style={styles.card}>
+            <View style={styles.row}>
+              <Text style={styles.label}>View tutorial</Text>
+              <Text style={styles.navArrow}>→</Text>
+            </View>
+          </Card>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => logout()} accessibilityRole="button" accessibilityLabel="Sign out">
           <Card style={styles.card}>
             <View style={styles.row}>
@@ -382,8 +507,23 @@ export default function SettingsScreen() {
               label={savingPasscode ? 'Updating...' : 'Update passcode'}
               onPress={handleChangePasscode}
               loading={savingPasscode}
-              style={styles.saveButton}
+              style={{ marginTop: t.spacing[3] }}
             />
+          </Card>
+        )}
+
+        {biometricAvailable && (
+          <Card style={styles.card}>
+            <View style={styles.row}>
+              <Text style={styles.label}>Use {biometricLabel}</Text>
+              <Switch
+                value={biometricEnabled}
+                onValueChange={toggleBiometric}
+                trackColor={{ false: t.colors.neutral200, true: t.colors.fill }}
+                thumbColor={biometricEnabled ? t.colors.fillInk : t.colors.neutral500}
+                accessibilityLabel={`Toggle ${biometricLabel} login`}
+              />
+            </View>
           </Card>
         )}
         <TouchableOpacity onPress={handleDeleteAccount} accessibilityRole="button" accessibilityLabel="Delete account">
@@ -400,6 +540,11 @@ export default function SettingsScreen() {
           <Text style={styles.footerText}>Clover v1.0.0</Text>
         </View>
       </ScrollView>
+
+      {/* Tutorial modal */}
+      <Modal visible={showTutorial} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setShowTutorial(false)}>
+        <Walkthrough onComplete={() => setShowTutorial(false)} />
+      </Modal>
     </View>
   );
 }
@@ -503,6 +648,16 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   value: { fontSize: theme.typography.secondary, color: theme.colors.inkSecondary },
   navLeft: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[2.5] },
   navArrow: { fontSize: theme.typography.body, color: theme.colors.inkSecondary },
+  appearanceRow: { flexDirection: 'row', gap: theme.spacing[2] },
+  appearanceBtn: {
+    flex: 1,
+    paddingVertical: theme.spacing[3],
+    alignItems: 'center',
+    borderRadius: theme.radii.chip,
+    borderWidth: 1,
+    borderColor: theme.colors.hairline,
+  },
+  appearanceBtnText: { fontSize: theme.typography.secondary, fontWeight: theme.typography.medium },
   footer: { alignItems: 'center', marginTop: theme.spacing[8], gap: theme.spacing[1.5] },
   footerText: { fontSize: theme.typography.caption, color: theme.colors.inkSecondary },
 });

@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import type { Doc } from '../../convex/_generated/dataModel';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
@@ -18,14 +20,22 @@ import { FormInput } from '@/components/Input';
 import { EmptyState } from '@/components/EmptyState';
 import { ProfileButton } from '@/components/ProfileButton';
 import { useAuth } from '@/lib/auth';
+import { useNetworkStatus } from '@/lib/useNetworkStatus';
+import { enqueue } from '@/lib/offlineQueue';
 import Svg, { Path } from 'react-native-svg';
+import { ThickFrame, CornerStamp, OffsetShadow, BoldDivider, FloatingTag } from '@/components/neoBrutalist';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CoursesScreen() {
+  const router = useRouter();
   const t = useTheme();
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ compose?: string }>();
   const COURSE_TAG_COLORS = t.colors.courseTags;
   const { userId } = useAuth();
+  const { isConnected, isInternetReachable } = useNetworkStatus();
+  const isOnline = isConnected && isInternetReachable !== false;
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [code, setCode] = useState('');
@@ -76,13 +86,22 @@ export default function CoursesScreen() {
       } else {
         await createCourse({ userId, code: code.trim().toUpperCase(), title: title.trim(), color: selectedColor });
       }
+      // Enqueue for offline persistence (FR28-29)
+      if (!isOnline) {
+        enqueue({
+          collection: 'courses',
+          documentId: editingId ?? undefined,
+          operation: editingId ? 'patch' : 'insert',
+          data: { userId, code: code.trim().toUpperCase(), title: title.trim(), color: selectedColor },
+        }).catch(() => {});
+      }
       resetForm();
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Something went wrong.');
+    } catch (e) {
+      Alert.alert('Error', (e instanceof Error ? e.message : null) || 'Something went wrong.');
     }
   };
 
-  const handleEdit = (course: any) => {
+  const handleEdit = (course: Doc<"courses">) => {
     setCode(course.code);
     setTitle(course.title);
     setSelectedColor(course.color);
@@ -93,14 +112,25 @@ export default function CoursesScreen() {
   const handleDelete = (id: string, code: string) => {
     Alert.alert('Delete course', `Delete ${code} and all its sessions? This can't be undone.`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteCourse({ id: id as any }) },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        await deleteCourse({ id: id as any });
+        if (!isOnline) {
+          enqueue({ collection: 'courses', documentId: id, operation: 'delete', data: {} }).catch(() => {});
+        }
+      } },
     ]);
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
+            <Text style={styles.backBtnText}>Back</Text>
+          </TouchableOpacity>
+          <ProfileButton />
+        </View>
         <View>
           <Text style={styles.title}>Courses</Text>
           <Text style={styles.subtitle}>
@@ -108,7 +138,6 @@ export default function CoursesScreen() {
           </Text>
         </View>
         <View style={styles.headerActions}>
-          <ProfileButton />
           <TouchableOpacity
             onPress={() => setShowForm(!showForm)}
             style={styles.addButton}
@@ -130,16 +159,18 @@ export default function CoursesScreen() {
 
       {/* Course form */}
       {showForm && (
-        <View style={styles.form}>
-          <FormInput label="Course code" value={code} onChangeText={setCode} placeholder="e.g. MTH201" autoCapitalize="characters" />
-          <FormInput label="Course title" value={title} onChangeText={setTitle} placeholder="e.g. Linear Algebra I" />
-          <Text style={styles.colorLabel}>Tag color</Text>
-          <View style={styles.colorRow}>
-            {COURSE_TAG_COLORS.map((color: string) => (
-              <TouchableOpacity
-                key={color}
-                onPress={() => setSelectedColor(color)}
-                style={[styles.colorSwatch, { backgroundColor: color }, selectedColor === color && styles.colorSwatchSelected]}
+        <OffsetShadow offset={4} style={styles.formShadow}>
+          <ThickFrame borderWidth={2} style={styles.formFrame}>
+            <View style={styles.form}>
+              <FormInput label="Course code" value={code} onChangeText={setCode} placeholder="e.g. MTH201" autoCapitalize="characters" />
+              <FormInput label="Course title" value={title} onChangeText={setTitle} placeholder="e.g. Linear Algebra I" />
+              <Text style={styles.colorLabel}>Tag color</Text>
+              <View style={styles.colorRow}>
+                {COURSE_TAG_COLORS.map((color: string) => (
+                  <TouchableOpacity
+                    key={color}
+                    onPress={() => setSelectedColor(color)}
+                    style={[styles.colorSwatch, { backgroundColor: color }, selectedColor === color && styles.colorSwatchSelected]}
                 accessibilityLabel={`Select color ${color}`}
                 accessibilityState={{ selected: selectedColor === color }}
               />
@@ -150,6 +181,8 @@ export default function CoursesScreen() {
             <Button label="Cancel" onPress={resetForm} variant="secondary" style={styles.formButton} />
           </View>
         </View>
+        </ThickFrame>
+      </OffsetShadow>
       )}
 
       {/* Course list */}
@@ -174,6 +207,7 @@ export default function CoursesScreen() {
               accessibilityLabel={`${item.code}, ${item.title}. Tap to edit, hold to delete.`}
             >
               <Card accentColor={item.color} style={styles.courseCard}>
+                <FloatingTag label={`${totalSessions[item._id] ?? 0}x`} position="topRight" color={item.color} textColor={t.colors.fillInk} />
                 <View style={styles.courseRow}>
                   <View style={styles.courseColorBar} />
                   <View style={styles.courseInfo}>
@@ -198,12 +232,22 @@ export default function CoursesScreen() {
 const makeStyles = (theme: Theme) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.canvas },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
     paddingHorizontal: theme.spacing[5],
     paddingTop: theme.spacing[12],
     paddingBottom: theme.spacing[3],
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing[2],
+  },
+  backBtn: {
+    paddingVertical: theme.spacing[1],
+  },
+  backBtnText: {
+    fontSize: theme.typography.secondary,
+    color: theme.colors.inkSecondary,
   },
   title: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.ink },
   subtitle: { fontSize: theme.typography.caption, color: theme.colors.inkSecondary, marginTop: theme.spacing[0.5] },
@@ -211,6 +255,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing[1],
+    marginTop: theme.spacing[2],
   },
   addButton: {
     width: 44,
@@ -221,7 +266,9 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   // Form
-  form: { padding: theme.spacing[5], borderBottomWidth: 1, borderBottomColor: theme.colors.neutral200 },
+  formShadow: { marginHorizontal: theme.spacing[5], marginBottom: theme.spacing[3] },
+  formFrame: { borderRadius: 4 },
+  form: { padding: theme.spacing[5], borderBottomWidth: 0, borderBottomColor: theme.colors.neutral200 },
   colorLabel: { fontSize: theme.typography.secondary, fontWeight: theme.typography.medium, color: theme.colors.ink, marginBottom: theme.spacing[2] },
   colorRow: { flexDirection: 'row', gap: theme.spacing[2], marginBottom: theme.spacing[4] },
   colorSwatch: { width: 44, height: 44, borderRadius: theme.radii.pill },

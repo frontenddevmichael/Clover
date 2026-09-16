@@ -1,7 +1,9 @@
 // SyncProvider — manages offline queue replay on reconnection.
 // Wraps the app and provides sync status to all screens.
 import React, { createContext, useContext, useEffect, useRef, useCallback, useState } from 'react';
+import { ConvexHttpClient } from 'convex/browser';
 import { useNetworkStatus } from '@/lib/useNetworkStatus';
+import { api } from '../convex/_generated/api';
 import {
   loadQueue,
   getPending,
@@ -13,6 +15,9 @@ import {
   onQueueChange,
   type QueueEntry,
 } from '@/lib/offlineQueue';
+
+const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL;
+const convex = CONVEX_URL ? new ConvexHttpClient(CONVEX_URL) : null;
 
 type SyncContextType = {
   isOnline: boolean;
@@ -36,16 +41,49 @@ export function useSync() {
   return useContext(SyncContext);
 }
 
-// Placeholder for the actual Convex mutation caller.
-// In production, this would call the appropriate Convex mutation based on
-// the queue entry's collection and operation.
+// Map queue entry to the correct Convex mutation and call it
 async function replayEntry(entry: QueueEntry): Promise<boolean> {
-  // TODO: Map entry.collection + entry.operation to the correct Convex mutation
-  // For now, we log the replay attempt and mark as synced (mock success)
-  console.log('[Sync] Replaying:', entry.collection, entry.operation, entry.data);
-  // Simulate network delay
-  await new Promise((r) => setTimeout(r, 200));
-  return true;
+  const { collection, operation, data } = entry;
+
+  if (!convex) return false;
+
+  try {
+    if (collection === 'courses') {
+      if (operation === 'insert') {
+        await convex.mutation(api.courses.create, data as any);
+      } else if (operation === 'patch' && entry.documentId) {
+        await convex.mutation(api.courses.update, { id: entry.documentId, ...data } as any);
+      } else if (operation === 'delete' && entry.documentId) {
+        await convex.mutation(api.courses.remove, { id: entry.documentId } as any);
+      }
+    } else if (collection === 'sessions') {
+      if (operation === 'insert') {
+        if (data.isRecurring) {
+          await convex.mutation(api.sessions.createRecurring, data as any);
+        } else {
+          await convex.mutation(api.sessions.createOneOff, data as any);
+        }
+      } else if (operation === 'patch' && entry.documentId) {
+        await convex.mutation(api.sessions.update, { id: entry.documentId, ...data } as any);
+      } else if (operation === 'delete' && entry.documentId) {
+        await convex.mutation(api.sessions.remove, { id: entry.documentId } as any);
+      }
+    } else if (collection === 'deadlines') {
+      if (operation === 'insert') {
+        await convex.mutation(api.deadlines.create, data as any);
+      } else if (operation === 'patch' && entry.documentId) {
+        await convex.mutation(api.deadlines.update, { id: entry.documentId, ...data } as any);
+      } else if (operation === 'delete' && entry.documentId) {
+        await convex.mutation(api.deadlines.remove, { id: entry.documentId } as any);
+      }
+    } else {
+      // Unknown collection — skip
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {

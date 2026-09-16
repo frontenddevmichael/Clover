@@ -10,8 +10,10 @@
 
 import type * as aiAssistant from "../aiAssistant.js";
 import type * as authSessions from "../authSessions.js";
+import type * as conversations from "../conversations.js";
 import type * as courses from "../courses.js";
 import type * as deadlines from "../deadlines.js";
+import type * as focusSessions from "../focusSessions.js";
 import type * as notifications from "../notifications.js";
 import type * as offlineQueue from "../offlineQueue.js";
 import type * as password from "../password.js";
@@ -31,8 +33,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   aiAssistant: typeof aiAssistant;
   authSessions: typeof authSessions;
+  conversations: typeof conversations;
   courses: typeof courses;
   deadlines: typeof deadlines;
+  focusSessions: typeof focusSessions;
   notifications: typeof notifications;
   offlineQueue: typeof offlineQueue;
   password: typeof password;

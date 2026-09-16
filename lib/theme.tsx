@@ -1,8 +1,8 @@
 // Clover Theme — applies ui-prompt.md tokens to React Native.
 // Scheme-aware: getTheme(isDark) returns the full theme for light or dark.
-// `theme` stays exported as the LIGHT instance so any code not yet converted
-// keeps working; new code consumes useTheme() and re-renders on scheme flips.
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
+import { useColorScheme } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import {
   colors,
   darkColors,
@@ -13,17 +13,10 @@ import {
   depth,
   withAlpha,
 } from './tokens';
-import { DefaultTheme } from '@react-navigation/native';
-
-// Navigator backdrop — expo-router SDK 56 hard-codes react-navigation's
-// DefaultTheme (#F2F2F2) as the color painted under and between screens and
-// exposes no theme prop. With EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK=1 set
-// in .env.local, we import the same module singleton the router's fork reads
-// and pin it to the canvas token. When dark mode returns, derive this from
-// the active scheme instead of the constant below.
-DefaultTheme.colors.background = colors.neutral50;
 
 type Scheme = 'light' | 'dark';
+type AppearancePreference = 'system' | 'light' | 'dark';
+const APPEARANCE_KEY = 'clover_appearance';
 
 function buildTheme(isDark: boolean) {
   const scheme: Scheme = isDark ? 'dark' : 'light';
@@ -80,10 +73,9 @@ function buildTheme(isDark: boolean) {
       fillInk: isDark ? darkColors.fillInk : colors.white,
       subtleFill: isDark ? darkColors.subtleFill : colors.neutral100,
       edgeLight: isDark ? darkColors.edgeLight : 'rgba(255, 255, 255, 0.9)',
-      // On dark surfaces a dark hairline reads as depth; on light use ink tint.
       edgeShadowLine: isDark ? 'rgba(0, 0, 0, 0.35)' : 'rgba(0, 0, 0, 0.06)',
 
-      // Legacy aliases (kept so unconverted code never breaks)
+      // Legacy aliases
       bg: isDark ? darkColors.canvas : colors.neutral50,
       surface: isDark ? darkColors.tier1 : colors.white,
       text: isDark ? darkColors.ink : colors.neutral950,
@@ -108,23 +100,61 @@ export const theme = buildTheme(false);
 // ── React plumbing ──────────────────────────────────────────────────────────
 const ThemeContext = createContext<Theme>(theme);
 
-// Debug/design override (parked with dark mode): ?theme=light|dark once
-// pinned the scheme. Dark mode is disabled for now — see below.
+type ThemeContextType = {
+  theme: Theme;
+  setAppearance: (pref: AppearancePreference) => void;
+  appearance: AppearancePreference;
+};
 
-// Dark mode is disabled: the app is pinned to the light scheme until the
-// dark palette ships properly. buildTheme() and darkColors stay in tokens
-// — re-enable by honoring useColorScheme() here again.
+const ThemeStateContext = createContext<ThemeContextType>({
+  theme,
+  setAppearance: () => {},
+  appearance: 'system',
+});
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const value = useMemo(() => buildTheme(false), []);
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  const systemScheme = useColorScheme();
+  const [preference, setPreference] = useState<AppearancePreference>('system');
+
+  // Load saved preference
+  useEffect(() => {
+    SecureStore.getItemAsync(APPEARANCE_KEY).then((val) => {
+      if (val === 'light' || val === 'dark' || val === 'system') {
+        setPreference(val);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const isDark = preference === 'system'
+    ? systemScheme === 'dark'
+    : preference === 'dark';
+
+  const themeValue = useMemo(() => buildTheme(isDark), [isDark]);
+
+  const setAppearance = useCallback((pref: AppearancePreference) => {
+    setPreference(pref);
+    SecureStore.setItemAsync(APPEARANCE_KEY, pref).catch(() => {});
+  }, []);
+
+  return (
+    <ThemeStateContext.Provider value={{ theme: themeValue, setAppearance, appearance: preference }}>
+      <ThemeContext.Provider value={themeValue}>
+        {children}
+      </ThemeContext.Provider>
+    </ThemeStateContext.Provider>
+  );
 }
 
 export function useTheme(): Theme {
   return useContext(ThemeContext);
 }
 
-// Hook for StyleSheet-style objects that need the scheme. Styles are rebuilt
-// only when the theme reference changes.
+/** Access theme + appearance setter (for Settings screen) */
+export function useThemeState() {
+  return useContext(ThemeStateContext);
+}
+
+// Hook for StyleSheet-style objects that need the scheme.
 export function useStyles<T extends Record<string, object>>(
   make: (t: Theme) => T
 ): T {

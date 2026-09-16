@@ -127,5 +127,49 @@ export default defineSchema({
     expiresAt: v.number(), // epoch ms
   })
     .index('by_token', ['tokenHash'])
+    .index('by_user', ['userId'])
+
+  // ── AI rate limiting (NFR9) ──
+  ,
+  aiRateLimits: defineTable({
+    userId: v.id('users'),
+    date: v.string(), // "YYYY-MM-DD"
+    count: v.number(),
+  }).index('by_user_date', ['userId', 'date'])
+
+  // ── AI proposal cache (NFR10) ──
+  ,
+  aiProposals: defineTable({
+    userId: v.id('users'),
+    inputHash: v.string(), // hash of courses + deadlines + constraints
+    proposal: v.any(), // cached proposal object
+    createdAt: v.number(),
+  }).index('by_user_hash', ['userId', 'inputHash'])
     .index('by_user', ['userId']),
+
+  // ── Focus sessions (Pomodoro timer) ──
+  focusSessions: defineTable({
+    userId: v.id('users'),
+    courseId: v.optional(v.id('courses')),
+    type: v.union(
+      v.literal('pomodoro'),
+      v.literal('shortBreak'),
+      v.literal('longBreak'),
+      v.literal('free')
+    ),
+    durationMinutes: v.number(),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    completed: v.boolean(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_user_date', ['userId', 'startedAt']),
+
+  // ── AI conversation history ──
+  conversations: defineTable({
+    userId: v.id('users'),
+    role: v.union(v.literal('user'), v.literal('assistant')),
+    content: v.string(),
+    createdAt: v.number(),
+  }).index('by_user_time', ['userId', 'createdAt']),
 });

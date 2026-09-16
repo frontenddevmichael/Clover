@@ -1,5 +1,5 @@
 // Semester settings — FR14, FR15, FR16
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -30,6 +32,8 @@ export default function SemesterScreen() {
   const [endDate, setEndDate] = useState('');
   const [examStart, setExamStart] = useState('');
   const [examEnd, setExamEnd] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<'start' | 'end' | 'examStart' | 'examEnd'>('start');
 
   const semesters = useQuery(api.semesters.listByUser, userId ? { userId } : 'skip');
   const activeSemester = useQuery(api.semesters.getActive, userId ? { userId } : 'skip');
@@ -47,6 +51,28 @@ export default function SemesterScreen() {
     setEditingId(null);
     setShowForm(false);
   };
+
+  const handleDateChange = (_: any, selectedDate?: Date) => {
+    setShowPicker(Platform.OS === 'ios');
+    if (!selectedDate) return;
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+    if (pickerTarget === 'start') setStartDate(dateStr);
+    else if (pickerTarget === 'end') setEndDate(dateStr);
+    else if (pickerTarget === 'examStart') setExamStart(dateStr);
+    else setExamEnd(dateStr);
+  };
+
+  const pickerValue = useMemo(() => {
+    const val = pickerTarget === 'start' ? startDate : pickerTarget === 'end' ? endDate : pickerTarget === 'examStart' ? examStart : examEnd;
+    if (val) {
+      const [y, m, d] = val.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return new Date();
+  }, [pickerTarget, startDate, endDate, examStart, examEnd]);
 
   const handleSave = async () => {
     if (!name.trim() || !startDate || !endDate) {
@@ -145,38 +171,58 @@ export default function SemesterScreen() {
             placeholder="e.g. Second Semester 2025/26"
           />
           <View style={styles.dateRow}>
-            <FormInput
-              label="Start date"
-              value={startDate}
-              onChangeText={setStartDate}
-              placeholder="YYYY-MM-DD"
-              style={styles.dateInput}
-            />
-            <FormInput
-              label="End date"
-              value={endDate}
-              onChangeText={setEndDate}
-              placeholder="YYYY-MM-DD"
-              style={styles.dateInput}
-            />
+            <View style={styles.dateInput}>
+              <Text style={styles.dateLabel}>Start date</Text>
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => { setPickerTarget('start'); setShowPicker(true); }}
+                accessibilityLabel={`Start date: ${startDate || 'not set'}`}
+              >
+                <Text style={styles.dateBtnText}>{startDate || 'Pick date'}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.dateInput}>
+              <Text style={styles.dateLabel}>End date</Text>
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => { setPickerTarget('end'); setShowPicker(true); }}
+                accessibilityLabel={`End date: ${endDate || 'not set'}`}
+              >
+                <Text style={styles.dateBtnText}>{endDate || 'Pick date'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={styles.formHint}>Exam period (optional)</Text>
           <View style={styles.dateRow}>
-            <FormInput
-              label="Exam starts"
-              value={examStart}
-              onChangeText={setExamStart}
-              placeholder="YYYY-MM-DD"
-              style={styles.dateInput}
-            />
-            <FormInput
-              label="Exam ends"
-              value={examEnd}
-              onChangeText={setExamEnd}
-              placeholder="YYYY-MM-DD"
-              style={styles.dateInput}
-            />
+            <View style={styles.dateInput}>
+              <Text style={styles.dateLabel}>Exam starts</Text>
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => { setPickerTarget('examStart'); setShowPicker(true); }}
+                accessibilityLabel={`Exam start: ${examStart || 'not set'}`}
+              >
+                <Text style={styles.dateBtnText}>{examStart || 'Pick date'}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.dateInput}>
+              <Text style={styles.dateLabel}>Exam ends</Text>
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => { setPickerTarget('examEnd'); setShowPicker(true); }}
+                accessibilityLabel={`Exam end: ${examEnd || 'not set'}`}
+              >
+                <Text style={styles.dateBtnText}>{examEnd || 'Pick date'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+          {showPicker && (
+            <DateTimePicker
+              value={pickerValue}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+            />
+          )}
           <View style={styles.formActions}>
             <Button
               label={editingId ? 'Update' : 'Add semester'}
@@ -322,6 +368,14 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   dateInput: {
     flex: 1,
   },
+  dateLabel: { fontSize: theme.typography.caption, fontWeight: theme.typography.medium, color: theme.colors.inkSecondary, marginBottom: theme.spacing[1] },
+  dateBtn: {
+    backgroundColor: theme.colors.surface, borderRadius: theme.radii.cardInner,
+    borderWidth: 1, borderColor: theme.colors.hairline,
+    paddingHorizontal: theme.spacing[3], paddingVertical: theme.spacing[2.5],
+    minHeight: 44, justifyContent: 'center',
+  },
+  dateBtnText: { fontSize: theme.typography.body, color: theme.colors.ink },
   formActions: {
     flexDirection: 'row',
     gap: theme.spacing[3],

@@ -7,6 +7,7 @@ import {
   Text,
   ActivityIndicator,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/lib/theme';
 
 type ButtonProps = {
@@ -29,9 +30,14 @@ export function Button({
   const t = useTheme();
   const isPrimary = variant === 'primary';
 
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    onPress();
+  };
+
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
       activeOpacity={0.7}
       style={[

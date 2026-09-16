@@ -12,6 +12,8 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Schedule' }} />
       <Tabs.Screen name="deadlines" options={{ title: 'Deadlines' }} />
+      <Tabs.Screen name="focus" options={{ title: 'Focus' }} />
+      <Tabs.Screen name="insights" options={{ title: 'Insights' }} />
       <Tabs.Screen name="social" options={{ title: 'Course Rooms' }} />
       <Tabs.Screen name="assistant" options={{ title: 'Assistant' }} />
       {/* Courses is a pushed screen, not a dock destination */}

@@ -8,6 +8,7 @@ const MAX_RETRIES = 3;
 export type QueueEntry = {
   id: string;
   collection: string;
+  documentId?: string;
   operation: 'insert' | 'patch' | 'delete';
   data: Record<string, any>;
   timestamp: number;

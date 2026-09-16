@@ -9,7 +9,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { SyncProvider } from '@/lib/SyncProvider';
-import { SyncBanner } from '@/components/SyncBanner';
+import { SyncToast } from '@/components/SyncToast';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { AppLockOverlay } from '@/components/AppLockOverlay';
+import { ToastProvider } from '@/components/Toast';
+import { requestPermissions } from '@/lib/notifications';
+import { initSentry } from '@/lib/sentry';
+import { useWidgetSync } from '@/lib/useWidgetSync';
+
+initSentry();
 
 LogBox.ignoreLogs(['ConvexClient']);
 
@@ -21,11 +29,19 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 const convexUrl = (globalThis as any).process?.env?.EXPO_PUBLIC_CONVEX_URL ?? '';
 const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
 
+function DynamicStatusBar() {
+  const t = useTheme();
+  return <StatusBar style={t.isDark ? 'light' : 'dark'} />;
+}
+
 function RootNavigator() {
   const { userId, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const t = useTheme();
+
+  // Sync schedule data to home screen widget
+  useWidgetSync();
 
   useEffect(() => {
     if (isLoading) return;
@@ -72,18 +88,26 @@ export default function RootLayout() {
     // First frame is mounting — release the native splash. Onboarding's
     // animated mark is already underneath, so the handoff is seamless.
     SplashScreen.hideAsync().catch(() => {});
+    // Request notification permissions on first launch
+    requestPermissions().catch(() => {});
   }, []);
 
   const content = (
     <ThemeProvider>
       <GestureHandlerRootView style={styles.root}>
-        <StatusBar style="dark" />
-        <AuthProvider>
-          <SyncProvider>
-            <SyncBanner />
-            <RootNavigator />
-          </SyncProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <DynamicStatusBar />
+          <ToastProvider>
+            <AppLockOverlay>
+              <AuthProvider>
+                <SyncProvider>
+                  <SyncToast />
+                  <RootNavigator />
+                </SyncProvider>
+              </AuthProvider>
+            </AppLockOverlay>
+          </ToastProvider>
+        </ErrorBoundary>
       </GestureHandlerRootView>
     </ThemeProvider>
   );

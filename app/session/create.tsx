@@ -1,6 +1,6 @@
 // Session creation/editing modal — FR5, FR6, FR7
 // Glass sheet (ui-prompt.md §5), 28px top radius, drag handle
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,22 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
+import Svg, { Path } from 'react-native-svg';
+import type { Doc } from '../../convex/_generated/dataModel';
 import { FormInput } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useAuth } from '@/lib/auth';
+import { scheduleSessionReminder } from '@/lib/notifications';
+import { useNetworkStatus } from '@/lib/useNetworkStatus';
+import { enqueue } from '@/lib/offlineQueue';
 
 const SESSION_TYPES = ['lecture', 'lab', 'tutorial', 'study', 'revision'] as const;
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -26,6 +33,8 @@ export default function SessionModal() {
   const styles = useStyles(makeStyles);
   const router = useRouter();
   const { userId } = useAuth();
+  const { isConnected, isInternetReachable } = useNetworkStatus();
+  const isOnline = isConnected && isInternetReachable !== false;
   const params = useLocalSearchParams<{
     courseId?: string;
     sessionId?: string;
@@ -37,6 +46,7 @@ export default function SessionModal() {
     api.sessions.getById,
     params.sessionId ? { id: params.sessionId as any } : 'skip'
   );
+  const notifPrefs = useQuery(api.notifications.getPreferences, userId ? { userId } : 'skip');
   const createRecurring = useMutation(api.sessions.createRecurring);
   const createOneOff = useMutation(api.sessions.createOneOff);
   const updateSession = useMutation(api.sessions.update);
@@ -54,6 +64,47 @@ export default function SessionModal() {
   const [recurrencePattern, setRecurrencePattern] = useState<
     'weekly' | 'biweekly' | 'custom'
   >('weekly');
+
+  // Time picker state
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<'start' | 'end'>('start');
+
+  const timePickerValue = useMemo(() => {
+    const timeStr = pickerTarget === 'start' ? startTime : endTime;
+    if (!timeStr) return new Date();
+    const [h, m] = timeStr.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h || 0, m || 0, 0, 0);
+    return d;
+  }, [pickerTarget, startTime, endTime]);
+
+  const handleTimeChange = (_: any, selectedDate?: Date) => {
+    setShowTimePicker(Platform.OS === 'ios');
+    if (!selectedDate) return;
+    const h = String(selectedDate.getHours()).padStart(2, '0');
+    const m = String(selectedDate.getMinutes()).padStart(2, '0');
+    const timeStr = `${h}:${m}`;
+    if (pickerTarget === 'start') setStartTime(timeStr);
+    else setEndTime(timeStr);
+  };
+
+  const handleDateChange = (_: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (!selectedDate) return;
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    setDate(`${y}-${m}-${d}`);
+  };
+
+  const datePickerValue = useMemo(() => {
+    if (date) {
+      const [y, m, d] = date.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return new Date();
+  }, [date]);
 
   useEffect(() => {
     if (params.courseId) setSelectedCourse(params.courseId);
@@ -120,6 +171,30 @@ export default function SessionModal() {
           endTime,
         });
       }
+      // Schedule notification reminder (FR25)
+      if (notifPrefs?.sessionReminders !== false && selectedCourse && startTime) {
+        const course = courses?.find((c: Doc<"courses">) => c._id === selectedCourse);
+        scheduleSessionReminder({
+          courseCode: course?.code ?? 'Course',
+          type,
+          dayOfWeek: isRecurring ? dayOfWeek : new Date().getDay(),
+          startTime,
+          leadMinutes: notifPrefs?.sessionLeadMinutes ?? 15,
+          quietHoursStart: notifPrefs?.quietHoursStart,
+          quietHoursEnd: notifPrefs?.quietHoursEnd,
+        }).catch(() => {});
+      }
+      // Enqueue for offline persistence (FR28-29)
+      if (!isOnline) {
+        const isCreate = !params.sessionId;
+        const isDelete = false;
+        enqueue({
+          collection: 'sessions',
+          documentId: params.sessionId,
+          operation: isCreate ? 'insert' : 'patch',
+          data: { userId, courseId: selectedCourse, type, dayOfWeek: isRecurring ? dayOfWeek : undefined, startTime, endTime, date: !isRecurring ? date : undefined, recurrencePattern: isRecurring ? recurrencePattern : undefined },
+        }).catch(() => {});
+      }
       router.back();
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Something went wrong.');
@@ -138,6 +213,9 @@ export default function SessionModal() {
           style: 'destructive',
           onPress: async () => {
             await deleteSession({ id: params.sessionId as any });
+            if (!isOnline) {
+              enqueue({ collection: 'sessions', documentId: params.sessionId, operation: 'delete', data: {} }).catch(() => {});
+            }
             router.back();
           },
         },
@@ -150,8 +228,10 @@ export default function SessionModal() {
       {/* Glass sheet header */}
       <View style={styles.sheetHeader}>
         <View style={styles.sheetHeaderRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.cancelBtn} accessibilityLabel="Cancel">
-            <Text style={styles.cancelBtnText}>Cancel</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.cancelBtn} accessibilityLabel="Go back">
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+              <Path d="M15 18l-6-6 6-6" stroke={t.colors.inkSecondary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
           </TouchableOpacity>
           <Text style={styles.sheetTitle}>
             {params.sessionId ? 'Edit session' : 'New session'}
@@ -292,31 +372,58 @@ export default function SessionModal() {
             </View>
           </>
         ) : (
-          <FormInput
-            label="Date"
-            value={date}
-            onChangeText={setDate}
-            placeholder="YYYY-MM-DD"
-          />
+          <View>
+            <Text style={styles.label}>Date</Text>
+            <TouchableOpacity
+              style={styles.dateBtn}
+              onPress={() => setShowDatePicker(true)}
+              accessibilityLabel={`Date: ${date || 'not set'}`}
+            >
+              <Text style={styles.dateBtnText}>{date || 'Pick date'}</Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={datePickerValue}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={handleDateChange}
+              />
+            )}
+          </View>
         )}
 
         {/* Time inputs */}
         <View style={styles.timeRow}>
-          <FormInput
-            label="Start"
-            value={startTime}
-            onChangeText={setStartTime}
-            placeholder="HH:MM"
-            style={styles.timeInput}
-          />
-          <FormInput
-            label="End"
-            value={endTime}
-            onChangeText={setEndTime}
-            placeholder="HH:MM"
-            style={styles.timeInput}
-          />
+          <View style={styles.timeInput}>
+            <Text style={styles.label}>Start</Text>
+            <TouchableOpacity
+              style={styles.timeBtn}
+              onPress={() => { setPickerTarget('start'); setShowTimePicker(true); }}
+              accessibilityLabel={`Start time: ${startTime || 'not set'}`}
+            >
+              <Text style={styles.timeBtnText}>{startTime || 'HH:MM'}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.timeInput}>
+            <Text style={styles.label}>End</Text>
+            <TouchableOpacity
+              style={styles.timeBtn}
+              onPress={() => { setPickerTarget('end'); setShowTimePicker(true); }}
+              accessibilityLabel={`End time: ${endTime || 'not set'}`}
+            >
+              <Text style={styles.timeBtnText}>{endTime || 'HH:MM'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {showTimePicker && (
+          <DateTimePicker
+            value={timePickerValue}
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={handleTimeChange}
+          />
+        )}
 
         {/* Actions */}
         <Button
@@ -341,7 +448,7 @@ export default function SessionModal() {
 const makeStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(247, 247, 248, 0.95)',
+    backgroundColor: theme.colors.glassSurface,
     // Liquid Glass effect (§5)
   },
   sheetHeader: {
@@ -493,6 +600,34 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   timeInput: {
     flex: 1,
+  },
+  dateBtn: {
+    backgroundColor: theme.colors.subtleFill,
+    borderRadius: theme.radii.chip,
+    paddingVertical: 12,
+    paddingHorizontal: theme.spacing[3],
+    borderWidth: 1,
+    borderColor: theme.colors.hairline,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  dateBtnText: {
+    fontSize: theme.typography.secondary,
+    color: theme.colors.ink,
+    textAlign: 'center',
+  },
+  timeBtn: {
+    backgroundColor: theme.colors.subtleFill,
+    borderRadius: theme.radii.chip,
+    paddingVertical: 12,
+    paddingHorizontal: theme.spacing[3],
+    borderWidth: 1,
+    borderColor: theme.colors.hairline,
+  },
+  timeBtnText: {
+    fontSize: theme.typography.secondary,
+    color: theme.colors.ink,
+    textAlign: 'center',
   },
   // Actions
   saveButton: {

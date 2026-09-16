@@ -8,9 +8,12 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import type { Doc } from '../../convex/_generated/dataModel';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
@@ -21,6 +24,12 @@ import { ProfileButton } from '@/components/ProfileButton';
 import { useAuth } from '@/lib/auth';
 import { IconFileText, IconBarChart, IconTarget, IconBell } from '@/components/Illustrations';
 import Svg, { Path } from 'react-native-svg';
+import { OffsetShadow, BoldDivider, CornerStamp, CountBadge } from '@/components/neoBrutalist';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleDeadlineReminder } from '@/lib/notifications';
+import { useNetworkStatus } from '@/lib/useNetworkStatus';
+import { enqueue } from '@/lib/offlineQueue';
+import { daysUntil } from '@/lib/dateUtils';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -80,7 +89,10 @@ export default function DeadlinesScreen() {
   const c = { ...t.colors, spacing: t.spacing, radii: t.radii, typography: t.typography } as const;
   const typeCfg = typeConfig(t);
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { userId } = useAuth();
+  const { isConnected, isInternetReachable } = useNetworkStatus();
+  const isOnline = isConnected && isInternetReachable !== false;
   const router = useRouter();
   // Dock center action lands here with compose=1 → open the add form
   const { compose } = useLocalSearchParams<{ compose?: string }>();
@@ -91,10 +103,14 @@ export default function DeadlinesScreen() {
   const [type, setType] = useState<typeof DEADLINE_TYPES[number]>('assignment');
   const [dueDate, setDueDate] = useState('');
   const [dueTime, setDueTime] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedDeadlineId, setSelectedDeadlineId] = useState<string | null>(null);
 
   const fromDate = new Date().toISOString().split('T')[0];
   const deadlines = useQuery(api.deadlines.listUpcoming, userId ? { userId, fromDate } : 'skip');
   const courses = useQuery(api.courses.listByUser, userId ? { userId } : 'skip');
+  const notifPrefs = useQuery(api.notifications.getPreferences, userId ? { userId } : 'skip');
   const createDeadline = useMutation(api.deadlines.create);
   const updateDeadline = useMutation(api.deadlines.update);
   const deleteDeadline = useMutation(api.deadlines.remove);
@@ -115,7 +131,7 @@ export default function DeadlinesScreen() {
   const courseMap = useMemo(() => {
     if (!courses) return {};
     // Keyed by _id — deadline rows resolve course color/code from courseId
-    return Object.fromEntries(courses.map((c: any) => [c._id, c]));
+    return Object.fromEntries(courses.map((c: Doc<"courses">) => [c._id, c]));
   }, [courses]);
 
   const resetForm = () => {
@@ -128,12 +144,47 @@ export default function DeadlinesScreen() {
     setShowForm(false);
   };
 
+  const handleDateChange = (_: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (!selectedDate) return;
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const d = String(selectedDate.getDate()).padStart(2, '0');
+    setDueDate(`${y}-${m}-${d}`);
+  };
+
+  const handleTimeChange = (_: any, selectedDate?: Date) => {
+    setShowTimePicker(Platform.OS === 'ios');
+    if (!selectedDate) return;
+    const h = String(selectedDate.getHours()).padStart(2, '0');
+    const m = String(selectedDate.getMinutes()).padStart(2, '0');
+    setDueTime(`${h}:${m}`);
+  };
+
+  const datePickerValue = useMemo(() => {
+    if (dueDate) {
+      const [y, m, d] = dueDate.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return new Date();
+  }, [dueDate]);
+
+  const timePickerValue = useMemo(() => {
+    if (dueTime) {
+      const [h, m] = dueTime.split(':').map(Number);
+      const d = new Date();
+      d.setHours(h || 0, m || 0, 0, 0);
+      return d;
+    }
+    return new Date();
+  }, [dueTime]);
+
   const handleSave = async () => {
     if (!title.trim() || !dueDate) {
       Alert.alert('Missing fields', 'Title and due date are required.');
       return;
     }
-    const course = courses?.find((c: any) => c.code.toLowerCase() === courseCode.toLowerCase());
+    const course = courses?.find((c: Doc<"courses">) => c.code.toLowerCase() === courseCode.toLowerCase());
     if (!course) {
       Alert.alert('Course not found', 'Enter a valid course code.');
       return;
@@ -145,9 +196,30 @@ export default function DeadlinesScreen() {
       } else {
         await createDeadline({ userId, courseId: course._id, title: title.trim(), type, dueDate, dueTime: dueTime || undefined });
       }
+      // Schedule deadline reminder (FR26)
+      if (notifPrefs?.deadlineReminders !== false) {
+        scheduleDeadlineReminder({
+          title: title.trim(),
+          courseCode: course.code,
+          dueDate,
+          dueTime: dueTime || undefined,
+          leadHours: notifPrefs?.deadlineLeadHours ?? 24,
+          quietHoursStart: notifPrefs?.quietHoursStart,
+          quietHoursEnd: notifPrefs?.quietHoursEnd,
+        }).catch(() => {});
+      }
+      // Enqueue for offline persistence (FR28-29)
+      if (!isOnline) {
+        enqueue({
+          collection: 'deadlines',
+          documentId: editingId ?? undefined,
+          operation: editingId ? 'patch' : 'insert',
+          data: { userId, courseId: course._id, title: title.trim(), type, dueDate, dueTime: dueTime || undefined },
+        }).catch(() => {});
+      }
       resetForm();
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Something went wrong.');
+    } catch (e) {
+      Alert.alert('Error', (e instanceof Error ? e.message : null) || 'Something went wrong.');
     }
   };
 
@@ -155,9 +227,9 @@ export default function DeadlinesScreen() {
     markComplete({ id: id as any });
   };
 
-  const handleEdit = (d: any) => {
+  const handleEdit = (d: Doc<"deadlines">) => {
     setTitle(d.title);
-    setCourseCode(courses?.find((c: any) => c._id === d.courseId)?.code ?? '');
+    setCourseCode(courses?.find((c: Doc<"courses">) => c._id === d.courseId)?.code ?? '');
     setType(d.type);
     setDueDate(d.dueDate);
     setDueTime(d.dueTime ?? '');
@@ -172,21 +244,15 @@ export default function DeadlinesScreen() {
     ]);
   };
 
-  const daysUntil = (date: string) => {
-    const now = new Date();
-    const due = new Date(date);
-    return Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  };
-
-  const urgentCount = displayDeadlines.filter((d: any) => {
+  const urgentCount = displayDeadlines.filter((d: Doc<"deadlines">) => {
     const days = daysUntil(d.dueDate);
     return days >= 0 && days <= 3 && !d.completed;
   }).length;
 
-  const overdueCount = displayDeadlines.filter((d: any) => daysUntil(d.dueDate) < 0 && !d.completed).length;
+  const overdueCount = displayDeadlines.filter((d: Doc<"deadlines">) => daysUntil(d.dueDate) < 0 && !d.completed).length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
@@ -204,21 +270,22 @@ export default function DeadlinesScreen() {
 
       {/* Urgent banner — wow factor */}
       {urgentCount > 0 && (
-        <View style={styles.urgentBanner}>
-          <View style={styles.urgentIconWrap}>
-            <IconBell size={20} color={t.colors.neutral900} strokeWidth={2} />
+        <OffsetShadow offset={4} style={styles.urgentShadow}>
+          <View style={styles.urgentBanner}>
+            <CornerStamp label="URGENT" color={t.colors.workloadOverloadedBg} style={styles.urgentStamp} />
+            <View style={styles.urgentIconWrap}>
+              <IconBell size={20} color={t.colors.neutral900} strokeWidth={2} />
+            </View>
+            <View style={styles.urgentInfo}>
+              <Text style={styles.urgentTitle}>Due soon</Text>
+              <Text style={styles.urgentSub}>{urgentCount} deadline{urgentCount > 1 ? 's' : ''} in the next 3 days</Text>
+            </View>
+            <CountBadge count={urgentCount} size={28} color={t.colors.workloadOverloadedBg} />
           </View>
-          <View style={styles.urgentInfo}>
-            <Text style={styles.urgentTitle}>Due soon</Text>
-            <Text style={styles.urgentSub}>{urgentCount} deadline{urgentCount > 1 ? 's' : ''} in the next 3 days</Text>
-          </View>
-          <View style={styles.urgentArrow}>
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <Path d="M9 6l6 6-6 6" stroke={t.colors.neutral500} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-          </View>
-        </View>
+        </OffsetShadow>
       )}
+
+      <BoldDivider shape="square" style={{ marginHorizontal: 20, marginTop: 4, marginBottom: 8 }} />
 
       {/* Form */}
       {showForm && (
@@ -242,9 +309,43 @@ export default function DeadlinesScreen() {
             ))}
           </View>
           <View style={styles.dateRow}>
-            <FormInput label="Due date" value={dueDate} onChangeText={setDueDate} placeholder="YYYY-MM-DD" style={styles.dateInput} />
-            <FormInput label="Time (opt.)" value={dueTime} onChangeText={setDueTime} placeholder="HH:MM" style={styles.dateInput} />
+            <View style={styles.dateInput}>
+              <Text style={styles.dateLabel}>Due date</Text>
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => setShowDatePicker(true)}
+                accessibilityLabel={`Due date: ${dueDate || 'not set'}`}
+              >
+                <Text style={styles.dateBtnText}>{dueDate || 'Pick date'}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.dateInput}>
+              <Text style={styles.dateLabel}>Time (opt.)</Text>
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => setShowTimePicker(true)}
+                accessibilityLabel={`Due time: ${dueTime || 'not set'}`}
+              >
+                <Text style={styles.dateBtnText}>{dueTime || 'Pick time'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+          {showDatePicker && (
+            <DateTimePicker
+              value={datePickerValue}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+            />
+          )}
+          {showTimePicker && (
+            <DateTimePicker
+              value={timePickerValue}
+              mode="time"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleTimeChange}
+            />
+          )}
           <View style={styles.formActions}>
             <Button label={editingId ? 'Update' : 'Add deadline'} onPress={handleSave} style={styles.formButton} />
             <Button label="Cancel" onPress={resetForm} variant="secondary" style={styles.formButton} />
@@ -270,10 +371,18 @@ export default function DeadlinesScreen() {
             return (
               <TouchableOpacity
                 onLongPress={() => handleEdit(item)}
+                onPress={() => setSelectedDeadlineId(selectedDeadlineId === item._id ? null : item._id)}
                 activeOpacity={0.7}
                 accessibilityLabel={`${item.title}, ${item.type}, due ${item.dueDate}. Hold to edit.`}
               >
-                <Card accentColor={courseMap[item.courseId]?.color || typeCfg[item.type as keyof typeof typeCfg].color} style={[styles.deadlineCard, (item.completed as boolean) ? styles.deadlineCardCompleted : undefined] as any}>
+                <Card
+                  accentColor={courseMap[item.courseId]?.color || typeCfg[item.type as keyof typeof typeCfg].color}
+                  style={[
+                    styles.deadlineCard,
+                    (item.completed as boolean) ? styles.deadlineCardCompleted : undefined,
+                    selectedDeadlineId === item._id ? styles.deadlineCardSelected : undefined,
+                  ] as any}
+                >
                   <View style={styles.deadlineRow}>
                     {/* Countdown circle — wow factor */}
                     <View style={[styles.countdownCircle, isUrgent && styles.countdownUrgent, isOverdue && styles.countdownOverdue, isToday && styles.countdownToday]}>
@@ -344,10 +453,12 @@ const makeStyles = (theme: Theme) => {
   title: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.neutral950 },
   subtitle: { fontSize: theme.typography.caption, color: theme.colors.neutral500, marginTop: theme.spacing[0.5] },
   // Urgent banner
+  urgentShadow: { marginHorizontal: theme.spacing[5], marginBottom: theme.spacing[4] },
   urgentBanner: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: theme.spacing[5], marginBottom: theme.spacing[4],
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: c.warningBg, borderRadius: c.radii.cardInner, borderWidth: 1, borderColor: c.warningBorder, padding: c.spacing[3.5], gap: c.spacing[3],
   },
+  urgentStamp: { position: 'absolute', top: -8, left: 12, zIndex: 10 },
   urgentIconWrap: {
     width: 36, height: 36, borderRadius: c.radii.pill, backgroundColor: c.warningBorder,
     alignItems: 'center', justifyContent: 'center',
@@ -370,12 +481,21 @@ const makeStyles = (theme: Theme) => {
   typeOptionTextSelected: { color: theme.colors.white },
   dateRow: { flexDirection: 'row', gap: theme.spacing[3] },
   dateInput: { flex: 1 },
+  dateLabel: { fontSize: theme.typography.caption, fontWeight: theme.typography.medium, color: theme.colors.inkSecondary, marginBottom: theme.spacing[1] },
+  dateBtn: {
+    backgroundColor: theme.colors.surface, borderRadius: theme.radii.cardInner,
+    borderWidth: 1, borderColor: theme.colors.hairline,
+    paddingHorizontal: theme.spacing[3], paddingVertical: theme.spacing[2.5],
+    minHeight: 44, justifyContent: 'center',
+  },
+  dateBtnText: { fontSize: theme.typography.body, color: theme.colors.ink },
   formActions: { flexDirection: 'row', gap: theme.spacing[3], marginTop: theme.spacing[2] },
   formButton: { flex: 1 },
   // List
   list: { padding: theme.spacing[5], paddingBottom: theme.spacing[30] },
   deadlineCard: { marginBottom: theme.spacing[3] },
   deadlineCardCompleted: { opacity: 0.5 },
+  deadlineCardSelected: { borderWidth: 2, borderColor: theme.colors.workloadBalanced, backgroundColor: theme.colors.workloadBalancedBg },
   deadlineRow: { flexDirection: 'row', alignItems: 'flex-start' },
   // Countdown circle — wow factor
   countdownCircle: {

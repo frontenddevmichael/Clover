@@ -6,9 +6,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import type { Doc } from '../../convex/_generated/dataModel';
 import { useTheme, useStyles } from '@/lib/theme';
 import Animated, {
   useSharedValue,
@@ -18,14 +20,26 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
+import { StickyNote } from '@/components/StickyNote';
+import { GridBackground } from '@/components/GridBackground';
 import { WorkloadIndicator } from '@/components/WorkloadIndicator';
 import { ElevatedSurface } from '@/components/ElevatedSurface';
 import { EmptyState } from '@/components/EmptyState';
+import {
+  CornerStamp,
+  OffsetShadow,
+  GeoDots,
+  BoldDivider,
+  FloatingTag,
+  CountBadge,
+} from '@/components/neoBrutalist';
 import { WaveDivider, GreetingBanner } from '@/components/SignatureElements';
 import { IconFlag, IconGraduationCap, IconUsers, IconBarChart, IconClock, IconTarget } from '@/components/Illustrations';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'expo-router';
+import { toMinutes, dateForDayOfWeek, isActiveSession, daysUntil } from '@/lib/dateUtils';
 import { ProfileButton } from '@/components/ProfileButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -41,11 +55,6 @@ const sessionTypeIcons: Record<string, React.ComponentType<{ size?: number; colo
 
 type WorkloadLevel = 'light' | 'balanced' | 'heavy' | 'overloaded';
 
-function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
-
 function classifyWorkload(sessionMinutes: number, deadlineCount: number): WorkloadLevel {
   // Deadline-aware (FR12): each deadline adds pressure like ~45min of study
   const score = sessionMinutes / 60 + deadlineCount * 0.75;
@@ -55,27 +64,12 @@ function classifyWorkload(sessionMinutes: number, deadlineCount: number): Worklo
   return 'overloaded';
 }
 
-function dateForDayOfWeek(dayOfWeek: number): string {
-  const now = new Date();
-  const diff = dayOfWeek - now.getDay();
-  const target = new Date(now);
-  target.setDate(target.getDate() + diff);
-  return target.toISOString().split('T')[0];
-}
-
 function timeOverlaps(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
   const toMin = (t: string) => {
     const [h, m] = t.split(':').map(Number);
     return h * 60 + m;
   };
   return toMin(aStart) < toMin(bEnd) && toMin(bStart) < toMin(aEnd);
-}
-
-function daysUntil(dateStr: string): number {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr + 'T00:00:00');
-  return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 function formatDate(dateStr: string): string {
@@ -147,6 +141,7 @@ export default function ScheduleScreen() {
   const router = useRouter();
   const { userId } = useAuth();
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const [selectedDay, setSelectedDay] = useState(() => new Date().getDay());
 
   const user = useQuery(api.users.getById, userId ? { userId } : 'skip');
@@ -160,7 +155,7 @@ export default function ScheduleScreen() {
   const sessions = allSessions ?? [];
   const courseMap = useMemo(() => {
     if (!courses) return {};
-    return Object.fromEntries(courses.map((c: any) => [c._id, c]));
+    return Object.fromEntries(courses.map((c: Doc<"courses">) => [c._id, c]));
   }, [courses]);
 
   const dayWorkloads = useMemo(() => {
@@ -195,8 +190,8 @@ export default function ScheduleScreen() {
 
   const daySessions = useMemo(() => {
     return sessions
-      .filter((s: any) => s.dayOfWeek === selectedDay)
-      .sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
+      .filter((s: Doc<"sessions">) => s.dayOfWeek === selectedDay)
+      .sort((a: Doc<"sessions">, b: Doc<"sessions">) => a.startTime.localeCompare(b.startTime));
   }, [sessions, selectedDay]);
 
   // FR8 — flag overlapping sessions for the selected day (warning, not block)
@@ -216,9 +211,9 @@ export default function ScheduleScreen() {
   }, [daySessions]);
 
   // FR11 — deadlines due on the selected day
-  const selectedDate = useMemo(() => dateForDayOfWeek(selectedDay), [selectedDay]);
+  const selectedDate = useMemo(() => dateForDayOfWeek(selectedDay).toISOString().split('T')[0], [selectedDay]);
   const dayDeadlines = useMemo(
-    () => (upcomingDeadlines ?? []).filter((d: any) => d.dueDate === selectedDate),
+    () => (upcomingDeadlines ?? []).filter((d: Doc<"deadlines">) => d.dueDate === selectedDate),
     [upcomingDeadlines, selectedDate]
   );
 
@@ -248,8 +243,20 @@ export default function ScheduleScreen() {
 
   const s = useStyles((th) => makeStyles(th));
 
+  const isLoading = allSessions === undefined || courses === undefined;
+
+  if (isLoading) {
+    return (
+      <GridBackground style={[s.container, { paddingTop: insets.top }]}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={t.colors.ink} />
+        </View>
+      </GridBackground>
+    );
+  }
+
   return (
-    <View style={s.container}>
+    <GridBackground style={[s.container, { paddingTop: insets.top }]}>
       <GreetingBanner name={firstName} />
 
       <View style={s.header}>
@@ -270,25 +277,32 @@ export default function ScheduleScreen() {
       </View>
 
       {/* Hero — today at a glance. Sessions count, deadline countdown, workload state. */}
-      <ElevatedSurface tier="tier1" style={s.hero}>
-        <View style={s.heroRow}>
-          <View style={s.heroStat}>
-            <Text style={s.heroNumber}>{daySessions.length}</Text>
-            <Text style={s.heroLabel}>sessions{'\n'}today</Text>
+      <OffsetShadow offset={5} style={s.heroShadow}>
+        <ElevatedSurface tier="tier1" style={s.hero}>
+          <CornerStamp
+            label={dayWorkload === 'overloaded' ? 'HEAVY' : dayWorkload === 'heavy' ? 'BUSY' : 'TODAY'}
+            color={dayWorkload === 'overloaded' ? t.colors.workloadOverloadedBg : t.colors.neutral950}
+            style={s.heroStamp}
+          />
+          <View style={s.heroRow}>
+            <View style={s.heroStat}>
+              <CountBadge count={daySessions.length} size={36} />
+              <Text style={s.heroLabel}>sessions{'\n'}today</Text>
+            </View>
+            <View style={s.heroDivider} />
+            <View style={s.heroStat}>
+              <Text style={[s.heroNumber, nextDeadline && { color: t.colors.workloadOverloaded }]}>
+                {nextDeadline ? `${nextDeadline.daysLeft}d` : '—'}
+              </Text>
+              <Text style={s.heroLabel}>next{'\n'}deadline</Text>
+            </View>
+            <View style={s.heroDivider} />
+            <View style={s.heroWorkload}>
+              <WorkloadIndicator level={dayWorkload} />
+            </View>
           </View>
-          <View style={s.heroDivider} />
-          <View style={s.heroStat}>
-            <Text style={[s.heroNumber, nextDeadline && { color: t.colors.workloadOverloaded }]}>
-              {nextDeadline ? `${nextDeadline.daysLeft}d` : '—'}
-            </Text>
-            <Text style={s.heroLabel}>next{'\n'}deadline</Text>
-          </View>
-          <View style={s.heroDivider} />
-          <View style={s.heroWorkload}>
-            <WorkloadIndicator level={dayWorkload} />
-          </View>
-        </View>
-      </ElevatedSurface>
+        </ElevatedSurface>
+      </OffsetShadow>
 
       {/* Courses — persistent access (no longer a dock tab) */}
       <TouchableOpacity
@@ -311,10 +325,12 @@ export default function ScheduleScreen() {
         </Card>
       </TouchableOpacity>
 
+      <BoldDivider shape="diamond" style={{ marginHorizontal: 20, marginTop: 4 }} />
+
       {/* Week rail — glass tier-2 surface, spring selection */}
       <ElevatedSurface tier="tier2" style={s.weekRail} shadow="card">
         {DAYS.map((day, i) => {
-          const sessionCount = sessions.filter((sess: any) => sess.dayOfWeek === i).length;
+          const sessionCount = sessions.filter((sess: Doc<"sessions">) => sess.dayOfWeek === i).length;
           const wl = dayWorkloads[i];
           return (
             <DayPill
@@ -340,12 +356,17 @@ export default function ScheduleScreen() {
       >
         <View style={s.dayHeader}>
           <Text style={s.dayTitle}>{FULL_DAYS[selectedDay]}</Text>
+          {daySessions.length > 0 && (
+            <CountBadge count={daySessions.length} size={24} color={t.colors.fill} textColor={t.colors.fillInk} />
+          )}
           {isSelectedDayExamPeriod && (
             <View style={s.examBadge}>
               <Text style={s.examBadgeText}>EXAM</Text>
             </View>
           )}
         </View>
+
+        <GeoDots rows={2} cols={16} dotSize={3} gap={6} color={t.colors.hairline} style={{ marginBottom: 8 }} />
 
         {daySessions.length === 0 ? (
           <EmptyState
@@ -355,9 +376,10 @@ export default function ScheduleScreen() {
             onAction={() => router.push('/(tabs)/courses')}
           />
         ) : (
-          daySessions.map((session: any) => {
+          daySessions.map((session: Doc<"sessions">) => {
             const course = courseMap[session.courseId];
             const hasOverlap = overlapIds.has(session._id);
+            const isNow = isActiveSession({ dayOfWeek: session.dayOfWeek, startTime: session.startTime, endTime: session.endTime });
             return (
               <TouchableOpacity
                 key={session._id}
@@ -372,11 +394,12 @@ export default function ScheduleScreen() {
                     },
                   })
                 }
-                accessibilityLabel={`Edit ${session.type} session, ${course?.code ?? 'course'}, ${session.startTime} to ${session.endTime}${hasOverlap ? ', overlaps another session' : ''}`}
+                accessibilityLabel={`Edit ${session.type} session, ${course?.code ?? 'course'}, ${session.startTime} to ${session.endTime}${isNow ? ', happening now' : ''}${hasOverlap ? ', overlaps another session' : ''}`}
               >
-                <Card
+                <StickyNote
                   accentColor={hasOverlap ? t.colors.workloadHeavy : course?.color}
-                  style={s.sessionCard}
+                  index={daySessions.indexOf(session)}
+                  style={isNow ? { borderWidth: 2, borderColor: t.colors.workloadBalanced, backgroundColor: t.colors.workloadBalancedBg } : undefined}
                 >
                   <View style={s.sessionRow}>
                     <View style={s.sessionTime}>
@@ -384,7 +407,14 @@ export default function ScheduleScreen() {
                       <Text style={s.timeText}>{session.endTime}</Text>
                     </View>
                     <View style={s.sessionInfo}>
-                      <Text style={s.sessionTitle}>{course?.code ?? 'Course'}</Text>
+                      <View style={s.sessionTitleRow}>
+                        <Text style={s.sessionTitle}>{course?.code ?? 'Course'}</Text>
+                        {isNow && (
+                          <View style={s.nowBadge}>
+                            <Text style={s.nowBadgeText}>NOW</Text>
+                          </View>
+                        )}
+                      </View>
                       <Text style={s.sessionSubtitle}>{course?.title ?? session.type}</Text>
                       <View style={s.sessionMeta}>
                         <Chip label={session.type} />
@@ -405,7 +435,7 @@ export default function ScheduleScreen() {
                       })()}
                     </View>
                   </View>
-                </Card>
+                </StickyNote>
               </TouchableOpacity>
             );
           })
@@ -415,7 +445,7 @@ export default function ScheduleScreen() {
         {dayDeadlines.length > 0 && (
           <View style={s.upcomingSection}>
             <Text style={s.upcomingTitle}>Due this day</Text>
-            {dayDeadlines.map((d: any) => {
+            {dayDeadlines.map((d: Doc<"deadlines">) => {
               const course = courseMap[d.courseId];
               return (
                 <TouchableOpacity
@@ -464,7 +494,7 @@ export default function ScheduleScreen() {
           </View>
         )}
       </ScrollView>
-    </View>
+    </GridBackground>
   );
 }
 
@@ -504,6 +534,17 @@ function makeStyles(t: ReturnType<typeof useTheme>) {
       paddingVertical: t.spacing[4],
       paddingHorizontal: t.spacing[3],
       borderRadius: t.radii.card,
+      overflow: 'visible',
+    },
+    heroShadow: {
+      marginHorizontal: t.spacing[5],
+      marginBottom: t.spacing[3],
+    },
+    heroStamp: {
+      position: 'absolute',
+      top: -8,
+      right: 12,
+      zIndex: 10,
     },
     heroRow: { flexDirection: 'row', alignItems: 'center' },
     heroStat: { flex: 1, alignItems: 'center' },
@@ -609,7 +650,7 @@ function makeStyles(t: ReturnType<typeof useTheme>) {
       color: t.colors.neutral950,
       letterSpacing: 0.5,
     },
-    sessionCard: { marginBottom: t.spacing[3] },
+    // Sessions
     sessionRow: { flexDirection: 'row', alignItems: 'flex-start' },
     sessionTime: { width: 52, marginRight: t.spacing[3] },
     timeText: {
@@ -619,7 +660,13 @@ function makeStyles(t: ReturnType<typeof useTheme>) {
       fontVariant: ['tabular-nums'],
     },
     sessionInfo: { flex: 1 },
+    sessionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing[2] },
     sessionTitle: { fontSize: t.typography.body, fontWeight: t.typography.semibold, color: t.colors.ink },
+    nowBadge: {
+      backgroundColor: t.colors.workloadBalanced, borderRadius: t.radii.chip,
+      paddingHorizontal: t.spacing[1.5], paddingVertical: 1,
+    },
+    nowBadgeText: { fontSize: t.typography.micro, fontWeight: t.typography.bold, color: t.colors.white },
     sessionSubtitle: { fontSize: t.typography.secondary, color: t.colors.inkSecondary, marginTop: 1 },
     sessionMeta: { flexDirection: 'row', alignItems: 'center', gap: t.spacing[2], marginTop: t.spacing[2] },
     locationText: { fontSize: t.typography.caption, color: t.colors.inkSecondary },
