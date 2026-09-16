@@ -252,3 +252,63 @@ export function ProfileSkeleton() {
     </View>
   );
 }
+
+// ─── Deadline skeleton ────────────────────────────────────────
+export function DeadlineSkeleton() {
+  const t = useTheme();
+  return (
+    <View style={{ padding: t.spacing[5], gap: t.spacing[3] }}>
+      {[1, 2, 3].map((i) => (
+        <View
+          key={i}
+          style={{
+            backgroundColor: t.colors.tier1,
+            borderRadius: t.radii.card,
+            borderWidth: 1,
+            borderColor: t.colors.hairline,
+            padding: t.spacing[4],
+            flexDirection: 'row',
+            gap: t.spacing[3],
+          }}
+        >
+          <ShimmerSweep width={56} height={56} borderRadius={t.radii.sheet} />
+          <View style={{ flex: 1, gap: t.spacing[1.5] }}>
+            <ShimmerSweep width={120} height={14} borderRadius={4} />
+            <View style={{ flexDirection: 'row', gap: t.spacing[2] }}>
+              <ShimmerSweep width={60} height={20} borderRadius={10} />
+              <ShimmerSweep width={80} height={12} borderRadius={4} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: t.spacing[2], alignItems: 'center' }}>
+              <ShimmerSweep width={100} height={10} borderRadius={3} />
+              <ShimmerSweep width={50} height={16} borderRadius={8} />
+            </View>
+          </View>
+          <ShimmerSweep width={24} height={24} borderRadius={12} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Assistant conversation skeleton ───────────────────────────
+export function ConversationSkeleton() {
+  const t = useTheme();
+  return (
+    <View style={{ padding: t.spacing[5], gap: t.spacing[2] }}>
+      {[1, 2, 3].map((i) => (
+        <View
+          key={i}
+          style={{
+            alignSelf: i % 2 === 0 ? ('flex-end' as const) : ('flex-start' as const),
+          }}
+        >
+          <ShimmerSweep
+            width={i % 2 === 0 ? 160 : 200}
+            height={36}
+            borderRadius={t.radii.card}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}

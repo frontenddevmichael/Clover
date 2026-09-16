@@ -1,5 +1,5 @@
 // Social / Course rooms — FR21, FR22, FR23, FR24
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
-import { useEffect } from 'react';
 import { api } from '../../convex/_generated/api';
 import type { Doc } from '../../convex/_generated/dataModel';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
@@ -27,7 +26,6 @@ import { HeaderBar } from '@/components/HeaderBar';
 import { SideDrawer } from '@/components/SideDrawer';
 import { RoomsSkeleton } from '@/components/SkeletonLoader';
 import { useAuth } from '@/lib/auth';
-import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GeoDots } from '@/components/neoBrutalist';
 
@@ -351,7 +349,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   header: {
     paddingHorizontal: theme.spacing[5],
-    paddingTop: theme.spacing[12],
+    paddingTop: theme.spacing[2],
     paddingBottom: theme.spacing[4],
   },
   headerRow: {

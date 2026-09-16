@@ -167,7 +167,6 @@ export default function ProfileScreen() {
                     style={[
                       styles.levelBtnText,
                       { color: level === l ? t.colors.canvas : t.colors.inkSecondary },
-                      level === l && { color: t.colors.canvas },
                     ]}
                   >
                     {l}

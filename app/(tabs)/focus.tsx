@@ -31,7 +31,6 @@ import { FocusStatsSkeleton } from '@/components/SkeletonLoader';
 import { useToast } from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
 import * as KeepAwake from 'expo-keep-awake';
-import Constants from 'expo-constants';
 
 const MODES = [
   { key: 'pomodoro', label: 'Focus', minutes: 25 },

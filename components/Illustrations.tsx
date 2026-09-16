@@ -330,7 +330,7 @@ function TimerBody({ p }: { p: ReturnType<typeof useSharedValue<number>> }) {
   }));
   return (
     <>
-      <AnimatedCircle cx="60" cy="62" r="35" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" strokeDasharray={200} animatedProps={circleProps} />
+      <AnimatedCircle cx="60" cy="62" r="35" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" strokeDasharray={220} animatedProps={circleProps} />
       <AnimatedLine x1="60" y1="62" x2="60" y2="40" stroke={t.colors.ink} strokeWidth={2} strokeLinecap={ROUND} animatedProps={handProps} />
       <AnimatedLine x1="60" y1="62" x2="78" y2="62" stroke={t.colors.ink} strokeWidth={1.5} strokeLinecap={ROUND} animatedProps={handProps} />
       <AnimatedCircle cx="60" cy="30" r="3" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" animatedProps={dotProps} />

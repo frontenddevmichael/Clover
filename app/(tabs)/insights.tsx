@@ -13,7 +13,7 @@ import { SideDrawer } from '@/components/SideDrawer';
 import { EmptyState } from '@/components/EmptyState';
 import { InsightsSkeleton } from '@/components/SkeletonLoader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CornerStamp, GeoDots, CountBadge } from '@/components/neoBrutalist';
+import { CornerStamp, GeoDots } from '@/components/neoBrutalist';
 import {
   aggregateDailyMinutes,
   aggregateCourseBreakdown,

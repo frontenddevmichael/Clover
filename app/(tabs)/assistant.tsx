@@ -10,6 +10,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { useMutation, useAction, useQuery } from 'convex/react';
 import { useEffect } from 'react';
@@ -31,10 +32,11 @@ import { Chip } from '@/components/Chip';
 import { Button } from '@/components/Button';
 import { IconSparkle } from '@/components/Illustrations';
 import { useAuth } from '@/lib/auth';
-import { ProfileButton } from '@/components/ProfileButton';
+import { useToast } from '@/components/Toast';
 import { HeaderBar } from '@/components/HeaderBar';
+import { EmptyState } from '@/components/EmptyState';
 import { SideDrawer } from '@/components/SideDrawer';
-import { ThickFrame, OffsetShadow, CornerStamp, BoldDivider } from '@/components/neoBrutalist';
+import { ThickFrame, OffsetShadow, CornerStamp, BoldDivider, GeoDots } from '@/components/neoBrutalist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Proposal = {
@@ -288,7 +290,14 @@ export default function AssistantScreen() {
   const [changeDesc, setChangeDesc] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const chatScrollRef = useRef<ScrollView>(null);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  };
+  const toast = useToast();
 
   const generatePlan = useAction(api.aiAssistant.generatePlan);
   const repropose = useAction(api.aiAssistant.repropose);
@@ -383,7 +392,9 @@ export default function AssistantScreen() {
         onPress: async () => {
           try {
             await clearHistory({ userId });
-          } catch {}
+          } catch {
+            toast.error('Failed to clear chat');
+          }
         },
       },
     ]);
@@ -404,6 +415,7 @@ export default function AssistantScreen() {
         <View style={styles.headerRow}>
           <View style={styles.headerTitleBlock}>
             <Text style={styles.title}>Assistant</Text>
+            <GeoDots rows={1} cols={6} dotSize={3} gap={6} color={t.colors.hairline} style={{ marginTop: 4 }} />
             <Text style={styles.subtitle}>Plan my week</Text>
           </View>
           <HeaderBar
@@ -418,7 +430,13 @@ export default function AssistantScreen() {
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={chatScrollRef}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.inkSecondary} />}
+      >
         {!proposal && (
             <View style={styles.generateFrame}>
               <View style={styles.generateSection}>

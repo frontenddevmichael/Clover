@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useQuery, useMutation } from 'convex/react';
@@ -26,7 +27,8 @@ import { SideDrawer } from '@/components/SideDrawer';
 import { useAuth } from '@/lib/auth';
 import { IconFileText, IconBarChart, IconTarget, IconBell } from '@/components/Illustrations';
 import Svg, { Path } from 'react-native-svg';
-import { OffsetShadow, BoldDivider, CornerStamp, CountBadge } from '@/components/neoBrutalist';
+import { OffsetShadow, BoldDivider, CornerStamp, CountBadge, GeoDots } from '@/components/neoBrutalist';
+import { DeadlineSkeleton } from '@/components/SkeletonLoader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleDeadlineReminder } from '@/lib/notifications';
 import { useNetworkStatus } from '@/lib/useNetworkStatus';
@@ -109,6 +111,7 @@ export default function DeadlinesScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDeadlineId, setSelectedDeadlineId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fromDate = new Date().toISOString().split('T')[0];
   const deadlines = useQuery(api.deadlines.listUpcoming, userId ? { userId, fromDate } : 'skip');
@@ -120,6 +123,12 @@ export default function DeadlinesScreen() {
   const markComplete = useMutation(api.deadlines.markComplete);
 
   const displayDeadlines = deadlines ?? [];
+  const isLoading = deadlines === undefined;
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  };
 
   useEffect(() => {
     if (compose === '1') {
@@ -262,6 +271,7 @@ export default function DeadlinesScreen() {
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.title}>Deadlines</Text>
+            <GeoDots rows={1} cols={6} dotSize={3} gap={6} color={t.colors.hairline} style={{ marginTop: 4 }} />
             <Text style={styles.subtitle}>
               {displayDeadlines.length} upcoming
               {urgentCount > 0 && ` · ${urgentCount} due soon`}
@@ -361,7 +371,9 @@ export default function DeadlinesScreen() {
       )}
 
       {/* Deadline list */}
-      {displayDeadlines.length === 0 && !showForm ? (
+      {isLoading ? (
+        <DeadlineSkeleton />
+      ) : displayDeadlines.length === 0 && !showForm ? (
         <EmptyState title="All clear" message="No upcoming deadlines. When you add assignments, CAs, or exams, they'll show up here." />
       ) : (
         <FlatList
@@ -369,6 +381,7 @@ export default function DeadlinesScreen() {
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.inkSecondary} />}
           renderItem={({ item }) => {
             const days = daysUntil(item.dueDate);
             const isUrgent = days >= 0 && days <= 3;
