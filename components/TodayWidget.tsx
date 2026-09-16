@@ -1,6 +1,6 @@
 // Home Screen Widget — shows today's sessions and deadlines.
 // This runs in a separate JS runtime (WidgetKit) and uses @expo/ui SwiftUI components.
-import { createWidget } from 'expo-widgets';
+// NOTE: expo-widgets native module is only available in EAS dev builds, not Expo Go.
 import { Text, VStack, HStack } from '@expo/ui/swift-ui';
 import { background, cornerRadius, padding, frame } from '@expo/ui/swift-ui/modifiers';
 
@@ -44,96 +44,104 @@ function getDueLabel(dueDate: string): string {
   return dueDate;
 }
 
-// Widget component — renders with @expo/ui SwiftUI primitives
-const TodayWidget = createWidget<WidgetData>('TodayWidget', (data) => {
-  const today = new Date();
-  const dayName = DAY_NAMES[today.getDay()];
-  const dateStr = today.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' });
+// Lazy widget creation — only runs when createWidget is available (EAS builds)
+let TodayWidget: any = null;
 
-  return (
-    <VStack
-      spacing={8}
-      modifiers={[
-        padding({ all: 16 }),
-        background('#F7F7F8'),
-        cornerRadius(12),
-      ]}
-    >
-      {/* Header */}
-      <HStack
-        modifiers={[
-          frame({ maxWidth: Infinity }),
-        ]}
-      >
-        <Text modifiers={[frame({ maxWidth: Infinity })]}>
-          {dayName} {dateStr}
-        </Text>
-        {data.focusMinutes > 0 && (
-          <Text>{data.focusMinutes}m focused</Text>
-        )}
-      </HStack>
+async function ensureWidget() {
+  if (TodayWidget) return TodayWidget;
+  try {
+    const { createWidget } = await import('expo-widgets');
+    TodayWidget = createWidget<WidgetData>('TodayWidget', (data) => {
+      const today = new Date();
+      const dayName = DAY_NAMES[today.getDay()];
+      const dateStr = today.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' });
 
-      {/* Sessions */}
-      {data.sessions.length === 0 && data.deadlines.length === 0 && (
+      return (
         <VStack
-          spacing={4}
+          spacing={8}
           modifiers={[
-            padding({ top: 24, bottom: 24 }),
+            padding({ all: 16 }),
+            background('#F7F7F8'),
+            cornerRadius(12),
           ]}
         >
-          <Text>No sessions today</Text>
-          <Text>Open Clover to plan your day</Text>
+          <HStack
+            modifiers={[
+              frame({ maxWidth: Infinity }),
+            ]}
+          >
+            <Text modifiers={[frame({ maxWidth: Infinity })]}>
+              {dayName} {dateStr}
+            </Text>
+            {data.focusMinutes > 0 && (
+              <Text>{data.focusMinutes}m focused</Text>
+            )}
+          </HStack>
+
+          {data.sessions.length === 0 && data.deadlines.length === 0 && (
+            <VStack
+              spacing={4}
+              modifiers={[
+                padding({ top: 24, bottom: 24 }),
+              ]}
+            >
+              <Text>No sessions today</Text>
+              <Text>Open Clover to plan your day</Text>
+            </VStack>
+          )}
+
+          {data.sessions.slice(0, 4).map((session, i) => (
+            <HStack
+              key={i}
+              spacing={10}
+              modifiers={[
+                padding({ all: 10 }),
+                background('#FFFFFF'),
+                cornerRadius(8),
+              ]}
+            >
+              <VStack spacing={2} modifiers={[frame({ maxWidth: Infinity })]}>
+                <Text>{session.code}</Text>
+                <Text>
+                  {session.type} · {formatTime12(session.startTime)}–{formatTime12(session.endTime)}
+                </Text>
+              </VStack>
+              {session.location && <Text>{session.location}</Text>}
+            </HStack>
+          ))}
+
+          {data.deadlines.slice(0, 2).map((deadline, i) => (
+            <HStack
+              key={`d-${i}`}
+              spacing={10}
+              modifiers={[
+                padding({ all: 10 }),
+                background('#FFF3E0'),
+                cornerRadius(8),
+              ]}
+            >
+              <VStack spacing={2} modifiers={[frame({ maxWidth: Infinity })]}>
+                <Text>{deadline.code}: {deadline.title}</Text>
+                <Text>
+                  {getDueLabel(deadline.dueDate)}{deadline.dueTime ? ` · ${formatTime12(deadline.dueTime)}` : ''}
+                </Text>
+              </VStack>
+            </HStack>
+          ))}
+
+          {(data.sessions.length > 4 || data.deadlines.length > 2) && (
+            <Text>
+              +{Math.max(0, data.sessions.length - 4) + Math.max(0, data.deadlines.length - 2)} more
+            </Text>
+          )}
         </VStack>
-      )}
+      );
+    });
+    return TodayWidget;
+  } catch {
+    return null;
+  }
+}
 
-      {data.sessions.slice(0, 4).map((session, i) => (
-        <HStack
-          key={i}
-          spacing={10}
-          modifiers={[
-            padding({ all: 10 }),
-            background('#FFFFFF'),
-            cornerRadius(8),
-          ]}
-        >
-          <VStack spacing={2} modifiers={[frame({ maxWidth: Infinity })]}>
-            <Text>{session.code}</Text>
-            <Text>
-              {session.type} · {formatTime12(session.startTime)}–{formatTime12(session.endTime)}
-            </Text>
-          </VStack>
-          {session.location && <Text>{session.location}</Text>}
-        </HStack>
-      ))}
-
-      {/* Deadlines */}
-      {data.deadlines.slice(0, 2).map((deadline, i) => (
-        <HStack
-          key={`d-${i}`}
-          spacing={10}
-          modifiers={[
-            padding({ all: 10 }),
-            background('#FFF3E0'),
-            cornerRadius(8),
-          ]}
-        >
-          <VStack spacing={2} modifiers={[frame({ maxWidth: Infinity })]}>
-            <Text>{deadline.code}: {deadline.title}</Text>
-            <Text>
-              {getDueLabel(deadline.dueDate)}{deadline.dueTime ? ` · ${formatTime12(deadline.dueTime)}` : ''}
-            </Text>
-          </VStack>
-        </HStack>
-      ))}
-
-      {/* More indicator */}
-      {(data.sessions.length > 4 || data.deadlines.length > 2) && (
-        <Text>
-          +{Math.max(0, data.sessions.length - 4) + Math.max(0, data.deadlines.length - 2)} more
-        </Text>
-      )}
-    </VStack>
-  );
-});
-
-export default TodayWidget;
+// Export stub — widgetSync.ts calls ensureWidget() which lazy-loads createWidget
+export default { ensureWidget } as any;

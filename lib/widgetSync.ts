@@ -26,31 +26,17 @@ export type WidgetData = {
   lastUpdated: string;
 };
 
-// Widget instance — lazy-loaded singleton
-let widgetInstance: any = null;
-
-async function getWidget() {
-  if (widgetInstance) return widgetInstance;
-  try {
-    // expo-widgets only works in EAS builds — silently skip in Expo Go
-    const Platform = require('react-native').Platform;
-    if (Platform.OS !== 'ios') return null;
-    const mod = await import('../components/TodayWidget');
-    widgetInstance = mod.default;
-    return widgetInstance;
-  } catch {
-    return null;
-  }
-}
-
 // ── Save widget data locally and notify widget ──
 export async function saveWidgetData(data: WidgetData): Promise<void> {
   try {
     await AsyncStorage.setItem(WIDGET_DATA_KEY, JSON.stringify(data));
-    // Attempt to update the widget (only works in dev builds with expo-widgets)
-    const widget = await getWidget();
-    if (widget?.updateSnapshot) {
-      widget.updateSnapshot(data);
+    // Attempt to update the widget (only works in EAS builds with expo-widgets)
+    const mod = await import('../components/TodayWidget').catch(() => null);
+    if (mod?.default?.ensureWidget) {
+      const widget = await mod.default.ensureWidget();
+      if (widget?.updateSnapshot) {
+        widget.updateSnapshot(data);
+      }
     }
   } catch {}
 }

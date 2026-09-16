@@ -1,9 +1,4 @@
 // Root layout — Convex + Auth → onboarding or tabs
-// Disable Reanimated strict mode warnings (false positives in useAnimatedStyle)
-if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env) {
-  (globalThis as any).process.env.REANIMATED_STRICT_MODE = '0';
-}
-
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
 import { StatusBar } from 'expo-status-bar';
@@ -25,7 +20,12 @@ import { useWidgetSync } from '@/lib/useWidgetSync';
 
 initSentry();
 
-LogBox.ignoreLogs(['ConvexClient']);
+LogBox.ignoreLogs([
+  'ConvexClient',
+  'Reading from `value` during component render',
+  "shared value's .value inside reanimated inline style",
+  'Cannot find native module',
+]);
 
 // Hold the native splash until React has mounted the first frame (no-op on
 // web). Onboarding's animated logo is the one brand moment; the native
