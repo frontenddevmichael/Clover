@@ -1,4 +1,9 @@
 // Root layout — Convex + Auth → onboarding or tabs
+// Disable Reanimated strict mode warnings (false positives in useAnimatedStyle)
+if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env) {
+  (globalThis as any).process.env.REANIMATED_STRICT_MODE = '0';
+}
+
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
 import { StatusBar } from 'expo-status-bar';
@@ -6,6 +11,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, LogBox, ActivityIndicator, View } from 'react-native';
 import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { SyncProvider } from '@/lib/SyncProvider';
@@ -84,13 +90,19 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
   useEffect(() => {
-    // First frame is mounting — release the native splash. Onboarding's
-    // animated mark is already underneath, so the handoff is seamless.
-    SplashScreen.hideAsync().catch(() => {});
-    // Request notification permissions on first launch
-    requestPermissions().catch(() => {});
-  }, []);
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {});
+      requestPermissions().catch(() => {});
+    }
+  }, [fontsLoaded]);
 
   const content = (
     <ThemeProvider>

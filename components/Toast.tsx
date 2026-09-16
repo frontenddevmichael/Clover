@@ -2,6 +2,7 @@
 // Shows at the top, auto-dismisses after 2 seconds.
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '@/lib/theme';
 
 type ToastType = 'success' | 'error' | 'info';
@@ -70,10 +71,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ show, success, error, info }}>
       {children}
       {toast.visible && (
-        <Animated.View style={[styles.container, { opacity, backgroundColor: bgColor }]}>
-          <Text style={[styles.message, { color: textColor }]} numberOfLines={2}>
-            {toast.message}
-          </Text>
+        <Animated.View style={[styles.container, { opacity }]} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          <BlurView
+            intensity={80}
+            tint={t.isDark ? 'dark' : 'light'}
+            style={[styles.blurBg, { backgroundColor: bgColor }]}
+          >
+            <Text style={[styles.message, { color: textColor }]} numberOfLines={2}>
+              {toast.message}
+            </Text>
+          </BlurView>
         </Animated.View>
       )}
     </ToastContext.Provider>
@@ -88,15 +95,20 @@ const styles = StyleSheet.create({
     top: 60,
     alignSelf: 'center',
     maxWidth: width - 48,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
     zIndex: 10000,
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
+    overflow: 'hidden',
+    borderRadius: 12,
+  },
+  blurBg: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   message: {
     fontSize: 14,

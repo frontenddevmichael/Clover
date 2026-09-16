@@ -373,6 +373,7 @@ export default function DeadlinesScreen() {
                 onLongPress={() => handleEdit(item)}
                 onPress={() => setSelectedDeadlineId(selectedDeadlineId === item._id ? null : item._id)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
                 accessibilityLabel={`${item.title}, ${item.type}, due ${item.dueDate}. Hold to edit.`}
               >
                 <Card

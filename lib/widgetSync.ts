@@ -32,6 +32,9 @@ let widgetInstance: any = null;
 async function getWidget() {
   if (widgetInstance) return widgetInstance;
   try {
+    // expo-widgets only works in EAS builds — silently skip in Expo Go
+    const Platform = require('react-native').Platform;
+    if (Platform.OS !== 'ios') return null;
     const mod = await import('../components/TodayWidget');
     widgetInstance = mod.default;
     return widgetInstance;

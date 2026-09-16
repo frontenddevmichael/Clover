@@ -41,6 +41,8 @@ export default function SemesterScreen() {
   const updateSemester = useMutation(api.semesters.update);
   const deleteSemester = useMutation(api.semesters.remove);
   const bulkShift = useMutation(api.semesters.bulkShiftSessions);
+  const pauseAllSessions = useMutation(api.sessions.pauseAllSessions);
+  const sessions = useQuery(api.sessions.listByUser, userId ? { userId } : 'skip');
 
   const resetForm = () => {
     setName('');
@@ -51,6 +53,11 @@ export default function SemesterScreen() {
     setEditingId(null);
     setShowForm(false);
   };
+
+  const isPaused = useMemo(
+    () => (sessions ?? []).some((s: any) => s.isRecurring && s.paused === true),
+    [sessions]
+  );
 
   const handleDateChange = (_: any, selectedDate?: Date) => {
     setShowPicker(Platform.OS === 'ios');
@@ -124,6 +131,24 @@ export default function SemesterScreen() {
     );
   };
 
+  const handlePauseToggle = () => {
+    if (!userId) return;
+    const newPaused = !isPaused;
+    Alert.alert(
+      newPaused ? 'Pause sessions' : 'Resume sessions',
+      newPaused
+        ? 'Pause all recurring sessions? They will be hidden from your schedule until resumed.'
+        : 'Resume all recurring sessions? They will reappear on your schedule.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: newPaused ? 'Pause' : 'Resume',
+          onPress: () => pauseAllSessions({ userId, paused: newPaused }),
+        },
+      ]
+    );
+  };
+
   const handleDelete = (id: string, semName: string) => {
     Alert.alert('Delete semester', `Remove "${semName}"?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -151,6 +176,15 @@ export default function SemesterScreen() {
             accessibilityLabel="Shift schedule"
           >
             <Text style={styles.shiftButtonText}>Shift</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handlePauseToggle}
+            style={[styles.shiftButton, isPaused && styles.pauseActive]}
+            accessibilityLabel={isPaused ? 'Resume all sessions' : 'Pause all sessions'}
+          >
+            <Text style={[styles.shiftButtonText, isPaused && styles.pauseActiveText]}>
+              {isPaused ? 'Resume' : 'Pause'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setShowForm(!showForm)}
@@ -253,6 +287,8 @@ export default function SemesterScreen() {
                 key={sem._id}
                 onLongPress={() => handleDelete(sem._id, sem.name)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`${sem.name}${isActive ? ', active' : ''}. Hold to delete.`}
               >
                 <Card
                   accentColor={
@@ -334,6 +370,13 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     fontSize: theme.typography.caption,
     fontWeight: theme.typography.semibold,
     color: theme.colors.ink,
+  },
+  pauseActive: {
+    backgroundColor: theme.colors.warningBg,
+    borderColor: theme.colors.warningBorder,
+  },
+  pauseActiveText: {
+    color: theme.colors.warningText,
   },
   addButton: {
     width: 44,

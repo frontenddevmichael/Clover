@@ -78,6 +78,9 @@ export const typography = {
   semibold: '600' as const,
   bold: '700' as const,
 
+  // Font family (Inter — ui-prompt §3)
+  fontFamily: 'Inter',
+
   // Optical adjustments — tight tracking is for hero/display sizes only
   trackingHero: -1.2,
   trackingDisplay: -0.6,

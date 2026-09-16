@@ -49,6 +49,7 @@
       ],
       "expo-local-authentication",
       "expo-calendar",
+      "expo-font",
       [
         "expo-widgets",
         {

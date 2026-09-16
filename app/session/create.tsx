@@ -47,6 +47,7 @@ export default function SessionModal() {
     params.sessionId ? { id: params.sessionId as any } : 'skip'
   );
   const notifPrefs = useQuery(api.notifications.getPreferences, userId ? { userId } : 'skip');
+
   const createRecurring = useMutation(api.sessions.createRecurring);
   const createOneOff = useMutation(api.sessions.createOneOff);
   const updateSession = useMutation(api.sessions.update);
@@ -65,10 +66,44 @@ export default function SessionModal() {
     'weekly' | 'biweekly' | 'custom'
   >('weekly');
 
+  // Overlap detection (FR8) — fetch all sessions for the target day
+  const overlapDay = isRecurring ? dayOfWeek : (date ? new Date(date + 'T12:00:00').getDay() : dayOfWeek);
+  const daySessions = useQuery(
+    api.sessions.listByUserAndDay,
+    userId ? { userId, dayOfWeek: overlapDay } : 'skip'
+  );
+
   // Time picker state
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'start' | 'end'>('start');
+
+  // Overlap detection — check if proposed time overlaps any existing session (FR8)
+  const overlappingSession = useMemo(() => {
+    if (!startTime || !endTime || !daySessions?.length) return null;
+    const toMin = (t: string) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+    const propStart = toMin(startTime);
+    const propEnd = toMin(endTime);
+    if (propStart >= propEnd) return null;
+
+    for (const s of daySessions) {
+      if (params.sessionId && s._id === params.sessionId) continue;
+      const sStart = toMin(s.startTime);
+      const sEnd = toMin(s.endTime);
+      if (propStart < sEnd && sStart < propEnd) {
+        return s;
+      }
+    }
+    return null;
+  }, [startTime, endTime, daySessions, params.sessionId]);
+
+  const overlapCourse = useMemo(() => {
+    if (!overlappingSession || !courses) return null;
+    return courses.find((c: Doc<'courses'>) => c._id === overlappingSession.courseId) ?? null;
+  }, [overlappingSession, courses]);
 
   const timePickerValue = useMemo(() => {
     const timeStr = pickerTarget === 'start' ? startTime : endTime;
@@ -282,7 +317,7 @@ export default function SessionModal() {
         {/* Session type */}
         <Text style={styles.label}>Type</Text>
         <View style={styles.typeRow}>
-          {SESSION_TYPES.map((t) => (
+              {SESSION_TYPES.map((t) => (
             <TouchableOpacity
               key={t}
               onPress={() => setType(t)}
@@ -290,6 +325,9 @@ export default function SessionModal() {
                 styles.typeOption,
                 type === t && styles.typeOptionSelected,
               ]}
+              accessibilityRole="radio"
+              accessibilityLabel={`Session type: ${t}`}
+              accessibilityState={{ checked: type === t }}
             >
               <Text
                 style={[
@@ -335,6 +373,9 @@ export default function SessionModal() {
                     styles.dayOption,
                     dayOfWeek === i && styles.dayOptionSelected,
                   ]}
+                  accessibilityRole="radio"
+                  accessibilityLabel={day}
+                  accessibilityState={{ selected: dayOfWeek === i }}
                 >
                   <Text
                     style={[
@@ -423,6 +464,29 @@ export default function SessionModal() {
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleTimeChange}
           />
+        )}
+
+        {/* Overlap warning (FR8 — warning only, never blocks) */}
+        {overlappingSession && (
+          <Card
+            accentColor={t.colors.workloadHeavy}
+            style={styles.overlapWarning}
+          >
+            <View style={styles.overlapRow}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M12 9v4m0 4h.01M12 2l10 18H2L12 2z"
+                  stroke={t.colors.workloadHeavy}
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={styles.overlapText}>
+                This overlaps with {overlapCourse?.code ?? 'another'} session ({overlappingSession.startTime}–{overlappingSession.endTime})
+              </Text>
+            </View>
+          </Card>
         )}
 
         {/* Actions */}
@@ -635,5 +699,19 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   deleteButton: {
     marginTop: theme.spacing[3],
+  },
+  // Overlap warning
+  overlapWarning: {
+    marginTop: theme.spacing[4],
+  },
+  overlapRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing[2],
+  },
+  overlapText: {
+    fontSize: theme.typography.caption,
+    color: theme.colors.workloadHeavy,
+    flex: 1,
   },
 });

@@ -171,6 +171,7 @@ export default function CoursesScreen() {
                     key={color}
                     onPress={() => setSelectedColor(color)}
                     style={[styles.colorSwatch, { backgroundColor: color }, selectedColor === color && styles.colorSwatchSelected]}
+                accessibilityRole="radio"
                 accessibilityLabel={`Select color ${color}`}
                 accessibilityState={{ selected: selectedColor === color }}
               />
@@ -204,6 +205,7 @@ export default function CoursesScreen() {
               onPress={() => handleEdit(item)}
               onLongPress={() => handleDelete(item._id, item.code)}
               activeOpacity={0.7}
+              accessibilityRole="button"
               accessibilityLabel={`${item.code}, ${item.title}. Tap to edit, hold to delete.`}
             >
               <Card accentColor={item.color} style={styles.courseCard}>

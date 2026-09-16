@@ -16,6 +16,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
 import { motion } from '@/lib/tokens';
 import { useQuery } from 'convex/react';
@@ -260,6 +261,12 @@ export default function NavDock() {
 
   return (
     <View style={styles.outer}>
+      {/* Blur backdrop for Liquid Glass effect */}
+      <BlurView
+        intensity={80}
+        tint={t.isDark ? 'dark' : 'light'}
+        style={styles.blurBackdrop}
+      />
       {/* White bar shape with concave cutout — this IS the bar */}
       <Svg
         viewBox={`0 0 ${SCREEN_W} ${BAR_HEIGHT}`}
@@ -281,7 +288,7 @@ export default function NavDock() {
             L 0 ${BAR_HEIGHT}
             Z
           `}
-          fill={t.colors.elevated}
+          fill={t.colors.glassDock}
         />
         {/* Visible stroke along the cutout edge */}
         <Path
@@ -372,6 +379,13 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    bottom: 0,
+  },
+  blurBackdrop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
     bottom: 0,
   },
   barSvg: {

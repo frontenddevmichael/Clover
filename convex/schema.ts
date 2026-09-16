@@ -42,6 +42,7 @@ export default defineSchema({
     endTime: v.string(),
     location: v.optional(v.string()), // room / venue, shown on schedule cards
     isRecurring: v.boolean(),
+    paused: v.optional(v.boolean()), // FR15 — pause/resume recurring sessions
     date: v.optional(v.string()), // "YYYY-MM-DD" for one-off sessions
     recurrencePattern: v.optional(
       v.union(v.literal('weekly'), v.literal('biweekly'), v.literal('custom'))

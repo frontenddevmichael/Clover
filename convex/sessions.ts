@@ -130,6 +130,26 @@ export const remove = mutation({
   },
 });
 
+// ── Pause or resume all recurring sessions for a user (FR15) ──
+export const pauseAllSessions = mutation({
+  args: {
+    userId: v.id('users'),
+    paused: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const sessions = await ctx.db
+      .query('sessions')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect();
+
+    for (const session of sessions) {
+      if (session.isRecurring) {
+        await ctx.db.patch(session._id, { paused: args.paused });
+      }
+    }
+  },
+});
+
 // ── Detect overlapping sessions for a user on a given day (FR8) ──
 export const detectOverlaps = query({
   args: {

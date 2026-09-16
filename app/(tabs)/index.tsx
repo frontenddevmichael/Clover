@@ -152,7 +152,7 @@ export default function ScheduleScreen() {
     api.deadlines.listUpcoming,
     userId ? { userId, fromDate: new Date().toISOString().split('T')[0] } : 'skip'
   );
-  const sessions = allSessions ?? [];
+  const sessions = (allSessions ?? []).filter((s: Doc<"sessions">) => !s.paused);
   const courseMap = useMemo(() => {
     if (!courses) return {};
     return Object.fromEntries(courses.map((c: Doc<"courses">) => [c._id, c]));
@@ -394,12 +394,16 @@ export default function ScheduleScreen() {
                     },
                   })
                 }
+                accessibilityRole="button"
                 accessibilityLabel={`Edit ${session.type} session, ${course?.code ?? 'course'}, ${session.startTime} to ${session.endTime}${isNow ? ', happening now' : ''}${hasOverlap ? ', overlaps another session' : ''}`}
               >
                 <StickyNote
                   accentColor={hasOverlap ? t.colors.workloadHeavy : course?.color}
                   index={daySessions.indexOf(session)}
-                  style={isNow ? { borderWidth: 2, borderColor: t.colors.workloadBalanced, backgroundColor: t.colors.workloadBalancedBg } : undefined}
+                  style={[
+                    isNow && { borderWidth: 2, borderColor: t.colors.workloadBalanced, backgroundColor: t.colors.workloadBalancedBg },
+                    isSelectedDayExamPeriod && !isNow && { backgroundColor: t.colors.warningBg, borderColor: t.colors.warningBorder },
+                  ]}
                 >
                   <View style={s.sessionRow}>
                     <View style={s.sessionTime}>
@@ -412,6 +416,11 @@ export default function ScheduleScreen() {
                         {isNow && (
                           <View style={s.nowBadge}>
                             <Text style={s.nowBadgeText}>NOW</Text>
+                          </View>
+                        )}
+                        {isSelectedDayExamPeriod && (
+                          <View style={s.sessionExamBadge}>
+                            <Text style={s.sessionExamBadgeText}>EXAM</Text>
                           </View>
                         )}
                       </View>
@@ -667,6 +676,12 @@ function makeStyles(t: ReturnType<typeof useTheme>) {
       paddingHorizontal: t.spacing[1.5], paddingVertical: 1,
     },
     nowBadgeText: { fontSize: t.typography.micro, fontWeight: t.typography.bold, color: t.colors.white },
+    sessionExamBadge: {
+      backgroundColor: t.colors.warningBg, borderRadius: t.radii.chip,
+      paddingHorizontal: t.spacing[1.5], paddingVertical: 1,
+      borderWidth: 1, borderColor: t.colors.warningBorder,
+    },
+    sessionExamBadgeText: { fontSize: t.typography.micro, fontWeight: t.typography.bold, color: t.colors.warningText },
     sessionSubtitle: { fontSize: t.typography.secondary, color: t.colors.inkSecondary, marginTop: 1 },
     sessionMeta: { flexDirection: 'row', alignItems: 'center', gap: t.spacing[2], marginTop: t.spacing[2] },
     locationText: { fontSize: t.typography.caption, color: t.colors.inkSecondary },
