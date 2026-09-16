@@ -146,40 +146,39 @@ function InsightsIcon({ active, ink, inkSecondary }: { active: boolean; ink: str
   );
 }
 
-// Center icons (white on black hill)
-function PlusIcon() {
+// Center icons (adaptive to theme)
+function PlusIcon({ color }: { color: string }) {
   return (
     <Svg viewBox="0 0 24 24" width={26} height={26}>
-      <Line x1="12" y1="5" x2="12" y2="19" stroke="white" strokeWidth={2.5} strokeLinecap="round" />
-      <Line x1="5" y1="12" x2="19" y2="12" stroke="white" strokeWidth={2.5} strokeLinecap="round" />
+      <Line x1="12" y1="5" x2="12" y2="19" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+      <Line x1="5" y1="12" x2="19" y2="12" stroke={color} strokeWidth={2.5} strokeLinecap="round" />
     </Svg>
   );
 }
 
-function DeadlineFlagBig() {
+function DeadlineFlagBig({ color }: { color: string }) {
   return (
     <Svg viewBox="0 0 24 24" width={26} height={26}>
-      <Line x1="7" y1="4" x2="7" y2="20" stroke="white" strokeWidth={2} strokeLinecap="round" />
-      <Path d="M7 5 H17 L14.5 8.5 L17 12 H7" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Line x1="7" y1="4" x2="7" y2="20" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M7 5 H17 L14.5 8.5 L17 12 H7" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
 }
 
-function ShareOverlapBig() {
+function AskIcon({ color }: { color: string }) {
   return (
     <Svg viewBox="0 0 24 24" width={26} height={26}>
-      <Circle cx="9" cy="9" r="3.5" stroke="white" strokeWidth={2} fill="none" />
-      <Circle cx="15.5" cy="15" r="3.5" stroke="white" strokeWidth={2} fill="none" />
-      <Line x1="11.5" y1="11.5" x2="13" y2="13" stroke="white" strokeWidth={2} strokeLinecap="round" />
+      <Path d="M20 12 A8 8 0 1 1 12 4" stroke={color} strokeWidth={2} strokeLinecap="round" fill="none" />
+      <Path d="M16.5 3.5 L20 4.5 L19 8" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
 }
 
-function AskIcon() {
+function UserIcon({ color }: { color: string }) {
   return (
-    <Svg viewBox="0 0 24 24" width={26} height={26}>
-      <Path d="M20 12 A8 8 0 1 1 12 4" stroke="white" strokeWidth={2} strokeLinecap="round" fill="none" />
-      <Path d="M16.5 3.5 L20 4.5 L19 8" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <Svg viewBox="0 0 24 24" width={24} height={24}>
+      <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth={2} fill="none" />
+      <Path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke={color} strokeWidth={2} strokeLinecap="round" fill="none" />
     </Svg>
   );
 }
@@ -193,11 +192,12 @@ const TABS = [
   { key: 'profile', label: 'Profile', route: '/(tabs)/profile', match: (p: string) => p.includes('/profile'), Icon: ProfileIcon },
 ] as const;
 
-function getCenterSpec(pathname: string) {
-  if (pathname.includes('/deadlines')) return { label: 'Add deadline', Icon: DeadlineFlagBig, route: '/(tabs)/deadlines', params: { compose: '1' } };
-  if (pathname.includes('/assistant')) return { label: 'Generate new plan', Icon: AskIcon, route: '/(tabs)/assistant', params: { action: 'new-plan' } };
-  if (pathname.includes('/courses')) return { label: 'Add course', Icon: PlusIcon, route: '/(tabs)/courses', params: { compose: '1' } };
-  return { label: 'Add session', Icon: PlusIcon, route: '/session/create' };
+function getCenterSpec(pathname: string, ctaColor: string) {
+  if (pathname.includes('/deadlines')) return { label: 'Add deadline', Icon: DeadlineFlagBig, iconColor: ctaColor, route: '/(tabs)/deadlines', params: { compose: '1' } };
+  if (pathname.includes('/assistant')) return { label: 'Generate plan', Icon: AskIcon, iconColor: ctaColor, route: '/(tabs)/assistant', params: { action: 'new-plan' } };
+  if (pathname.includes('/profile')) return { label: 'Edit profile', Icon: UserIcon, iconColor: ctaColor, route: '/(tabs)/profile' };
+  if (pathname.includes('/courses')) return { label: 'Add course', Icon: PlusIcon, iconColor: ctaColor, route: '/(tabs)/courses', params: { compose: '1' } };
+  return { label: 'Add session', Icon: PlusIcon, iconColor: ctaColor, route: '/session/create' };
 }
 
 // ─── Wavy underline for active tab ───
@@ -246,9 +246,11 @@ export default function NavDock() {
   const reduced = useReducedMotion() ?? false;
 
   const activeKey = TABS.find((tab) => tab.match(pathname))?.key ?? null;
-  const center = getCenterSpec(pathname);
+  const ctaBg = t.isDark ? t.colors.fill : t.colors.ink;
+  const ctaIconColor = t.isDark ? t.colors.fillInk : t.colors.white;
+  const center = getCenterSpec(pathname, ctaIconColor);
 
-  // Center morph
+  // Center morph — bouncy transition between screen icons
   const morph = useSharedValue(1);
   const lastRoute = useRef(pathname);
   useEffect(() => {
@@ -256,14 +258,15 @@ export default function NavDock() {
     lastRoute.current = pathname;
     if (reduced) { morph.value = 1; return; }
     morph.value = 0;
-    morph.value = withTiming(1, { duration: MORPH_MS, easing: SOFT_EASE });
+    morph.value = withTiming(1, { duration: 350, easing: SOFT_EASE });
   }, [pathname, reduced]);
   const morphStyle = useAnimatedStyle(() => ({
     transform: [
-      { scale: 0.5 + 0.5 * morph.value },
-      { rotate: `${(1 - morph.value) * 45}deg` },
+      { scale: 0.4 + 0.6 * morph.value },
+      { rotate: `${(1 - morph.value) * 90}deg` },
+      { translateY: (1 - morph.value) * -6 },
     ],
-    opacity: 0.3 + 0.7 * morph.value,
+    opacity: 0.2 + 0.8 * morph.value,
   }));
 
   return (
@@ -337,9 +340,9 @@ export default function NavDock() {
         accessibilityRole="button"
         accessibilityLabel={center.label}
       >
-        <View style={styles.centerBtn}>
+        <View style={[styles.centerBtn, { backgroundColor: ctaBg, shadowColor: ctaBg }]}>
           <Animated.View style={morphStyle}>
-            <center.Icon />
+            <center.Icon color={center.iconColor} />
           </Animated.View>
         </View>
       </Pressable>
@@ -452,10 +455,8 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: theme.colors.ink,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
