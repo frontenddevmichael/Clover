@@ -207,8 +207,8 @@ function CalBody({ p }: { p: ReturnType<typeof useSharedValue<number>> }) {
       />
       <AnimatedLine x1="40" y1="25" x2="40" y2="40" stroke={t.colors.ink} strokeWidth={STROKE} strokeLinecap={ROUND} animatedProps={hookProps} />
       <AnimatedLine x1="80" y1="25" x2="80" y2="40" stroke={t.colors.ink} strokeWidth={STROKE} strokeLinecap={ROUND} animatedProps={hookProps} />
-      <AnimatedLine x1="25" y1="55" x2="95" y2="55" stroke={baseColors.neutral500} strokeWidth={0.75} strokeLinecap={ROUND} animatedProps={gridProps} />
-      <AnimatedLine x1="25" y1="72" x2="95" y2="72" stroke={baseColors.neutral500} strokeWidth={0.75} strokeLinecap={ROUND} animatedProps={gridProps} />
+      <AnimatedLine x1="25" y1="55" x2="95" y2="55" stroke={baseColors.neutral300} strokeWidth={0.75} strokeLinecap={ROUND} animatedProps={gridProps} />
+      <AnimatedLine x1="25" y1="72" x2="95" y2="72" stroke={baseColors.neutral300} strokeWidth={0.75} strokeLinecap={ROUND} animatedProps={gridProps} />
       <AnimatedPath
         d="M 45 75 L 55 85 L 75 60"
         stroke={t.colors.ink}
@@ -294,6 +294,6 @@ function TextLine({
     opacity: interpolate(p.value, [from, from + 0.1], [0, 0.5]),
   }));
   return (
-    <AnimatedLine x1={x1} y1={y} x2={x2} y2={y + 1} stroke={baseColors.neutral500} strokeWidth={0.75} strokeLinecap={ROUND} animatedProps={props} />
+    <AnimatedLine x1={x1} y1={y} x2={x2} y2={y + 1} stroke={baseColors.neutral300} strokeWidth={0.75} strokeLinecap={ROUND} animatedProps={props} />
   );
 }

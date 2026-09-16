@@ -85,7 +85,7 @@ function MockScheduleCard({ t, anim }: { t: Theme; anim: SharedValue<number> }) 
   return (
     <Animated.View style={cardStyle}>
       <ThickFrame borderWidth={2} style={{ borderRadius: 4, backgroundColor: t.colors.surface, padding: 16, width: 220 }}>
-        <CornerStamp label="MON" color={t.colors.neutral950} style={{ position: 'absolute', top: -8, right: 8, zIndex: 10 }} />
+        <CornerStamp label="MON" color={t.colors.ink} style={{ position: 'absolute', top: -8, right: 8, zIndex: 10 }} />
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ alignItems: 'center' }}>
             <Text style={{ fontSize: 11, fontWeight: '700', color: t.colors.ink }}>09:00</Text>
@@ -97,7 +97,7 @@ function MockScheduleCard({ t, anim }: { t: Theme; anim: SharedValue<number> }) 
             <Text style={{ fontSize: 11, color: t.colors.inkSecondary }}>Linear Algebra</Text>
             <View style={{ flexDirection: 'row', gap: 4, marginTop: 6 }}>
               <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, backgroundColor: t.colors.courseTags[1] }}>
-                <Text style={{ fontSize: 9, fontWeight: '600', color: t.colors.neutral950 }}>lecture</Text>
+                <Text style={{ fontSize: 9, fontWeight: '600', color: t.colors.ink }}>lecture</Text>
               </View>
               <Text style={{ fontSize: 10, color: t.colors.inkFaint }}>LT1</Text>
             </View>
@@ -126,7 +126,7 @@ function MockCourseCard({ t, anim }: { t: Theme; anim: SharedValue<number> }) {
         </View>
         <View style={{ flexDirection: 'row', gap: 4, marginTop: 10 }}>
           <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: t.colors.courseTags[1], alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: t.colors.neutral950 }}>3x</Text>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: t.colors.ink }}>3x</Text>
           </View>
         </View>
       </ThickFrame>
@@ -257,7 +257,7 @@ export function Walkthrough({ onComplete }: WalkthroughProps) {
 
       {/* Text */}
       <Animated.View style={[styles.textArea, titleStyle]}>
-        <BoldDivider shape="diamond" color={t.colors.neutral950} style={{ marginBottom: 16 }} />
+        <BoldDivider shape="diamond" color={t.colors.ink} style={{ marginBottom: 16 }} />
         <Text style={styles.title}>{feature.title}</Text>
       </Animated.View>
       <Animated.View style={[styles.textArea2, subtitleStyle]}>
@@ -308,13 +308,13 @@ function makeStyles(t: Theme) {
       paddingHorizontal: 12,
       borderRadius: 2,
       borderWidth: 2,
-      borderColor: t.colors.neutral950,
+      borderColor: t.colors.ink,
       backgroundColor: t.colors.canvas,
     },
     skipText: {
       fontSize: 12,
       fontWeight: '700',
-      color: t.colors.neutral950,
+      color: t.colors.ink,
       letterSpacing: 0.5,
       textTransform: 'uppercase',
     },
@@ -335,7 +335,7 @@ function makeStyles(t: Theme) {
     title: {
       fontSize: 26,
       fontWeight: '800',
-      color: t.colors.neutral950,
+      color: t.colors.ink,
       letterSpacing: -0.5,
     },
     subtitle: {
@@ -357,7 +357,7 @@ function makeStyles(t: Theme) {
     },
     dotActive: {
       width: 24,
-      backgroundColor: t.colors.neutral950,
+      backgroundColor: t.colors.ink,
     },
     nextBtn: {
       marginHorizontal: 24,
@@ -365,7 +365,7 @@ function makeStyles(t: Theme) {
       backgroundColor: t.colors.fill,
       borderRadius: 4,
       borderWidth: 2,
-      borderColor: t.colors.neutral950,
+      borderColor: t.colors.ink,
       paddingVertical: 16,
       alignItems: 'center',
     },

@@ -281,7 +281,7 @@ export default function DeadlinesScreen() {
           <View style={styles.urgentBanner}>
             <CornerStamp label="URGENT" color={t.colors.workloadOverloadedBg} style={styles.urgentStamp} />
             <View style={styles.urgentIconWrap}>
-              <IconBell size={20} color={t.colors.neutral900} strokeWidth={2} />
+              <IconBell size={20} color={t.colors.ink} strokeWidth={2} />
             </View>
             <View style={styles.urgentInfo}>
               <Text style={styles.urgentTitle}>Due soon</Text>
@@ -309,7 +309,7 @@ export default function DeadlinesScreen() {
               >
                 {(() => {
                   const TypeIcon = typeCfg[dt].Icon;
-                  return <TypeIcon size={15} color={t.colors.neutral950} strokeWidth={2} />;
+                  return <TypeIcon size={15} color={t.colors.ink} strokeWidth={2} />;
                 })()}
                 <Text style={[styles.typeOptionText, type === dt && styles.typeOptionTextSelected]}>{typeCfg[dt].label}</Text>
               </TouchableOpacity>
@@ -445,7 +445,7 @@ export default function DeadlinesScreen() {
 const makeStyles = (theme: Theme) => {
   const c = { ...theme.colors, spacing: theme.spacing, radii: theme.radii, typography: theme.typography } as const;
   return StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.neutral50 },
+  container: { flex: 1, backgroundColor: theme.colors.canvas },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -460,7 +460,7 @@ const makeStyles = (theme: Theme) => {
     justifyContent: 'space-between',
     flex: 1,
   },
-  title: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.neutral950 },
+  title: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.ink },
   subtitle: { fontSize: theme.typography.caption, color: theme.colors.neutral500, marginTop: theme.spacing[0.5] },
   // Urgent banner
   urgentShadow: { marginHorizontal: theme.spacing[5], marginBottom: theme.spacing[4] },
@@ -474,20 +474,20 @@ const makeStyles = (theme: Theme) => {
     alignItems: 'center', justifyContent: 'center',
   },
   urgentInfo: { flex: 1 },
-  urgentTitle: { fontSize: c.typography.secondary, fontWeight: c.typography.semibold, color: c.neutral900 },
+  urgentTitle: { fontSize: c.typography.secondary, fontWeight: c.typography.semibold, color: c.ink },
   urgentSub: { fontSize: c.typography.caption, color: c.neutral500, marginTop: c.spacing[0.5] },
   urgentArrow: { alignItems: 'center', justifyContent: 'center' },
   // Form
-  form: { padding: theme.spacing[5], borderBottomWidth: 1, borderBottomColor: theme.colors.neutral200 },
-  formLabel: { fontSize: theme.typography.secondary, fontWeight: theme.typography.medium, color: theme.colors.neutral950, marginBottom: theme.spacing[2] },
+  form: { padding: theme.spacing[5], borderBottomWidth: 1, borderBottomColor: theme.colors.hairline },
+  formLabel: { fontSize: theme.typography.secondary, fontWeight: theme.typography.medium, color: theme.colors.ink, marginBottom: theme.spacing[2] },
   typeRow: { flexDirection: 'row', gap: theme.spacing[1.5], marginBottom: theme.spacing[4] },
   typeOption: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: theme.spacing[3], paddingVertical: theme.spacing[2.5],
-    minHeight: 44, borderRadius: theme.radii.chip, borderWidth: 1, borderColor: theme.colors.neutral200,
+    minHeight: 44, borderRadius: theme.radii.chip, borderWidth: 1, borderColor: theme.colors.hairline,
   },
-  typeOptionSelected: { backgroundColor: theme.colors.neutral950, borderColor: theme.colors.neutral950 },
-  typeOptionText: { fontSize: theme.typography.caption, fontWeight: theme.typography.medium, color: theme.colors.neutral950 },
+  typeOptionSelected: { backgroundColor: theme.colors.ink, borderColor: theme.colors.ink },
+  typeOptionText: { fontSize: theme.typography.caption, fontWeight: theme.typography.medium, color: theme.colors.ink },
   typeOptionTextSelected: { color: theme.colors.white },
   dateRow: { flexDirection: 'row', gap: theme.spacing[3] },
   dateInput: { flex: 1 },
@@ -510,17 +510,17 @@ const makeStyles = (theme: Theme) => {
   // Countdown circle — wow factor
   countdownCircle: {
     width: 56, height: 56, borderRadius: c.radii.sheet,
-    backgroundColor: c.neutral100, borderWidth: 2, borderColor: c.neutral200,
+    backgroundColor: c.subtleFill, borderWidth: 2, borderColor: c.hairline,
     alignItems: 'center', justifyContent: 'center', marginRight: c.spacing[3.5],
   },
   countdownUrgent: { backgroundColor: c.workloadOverloadedBg, borderColor: c.workloadOverloadedBg },
   countdownOverdue: { backgroundColor: c.overdueBg, borderColor: c.overdueBg },
   countdownToday: { backgroundColor: c.workloadBalancedBg, borderColor: c.workloadBalancedBg },
-  countdownNum: { fontSize: c.typography.body, fontWeight: c.typography.bold, color: c.neutral950 },
+  countdownNum: { fontSize: c.typography.body, fontWeight: c.typography.bold, color: c.ink },
   countdownLabel: { fontSize: c.typography.micro, fontWeight: c.typography.medium, color: c.neutral500, marginTop: c.spacing[0] },
   deadlineInfo: { flex: 1 },
   deadlineHeader: { flexDirection: 'row', alignItems: 'center', gap: c.spacing[2], marginBottom: c.spacing[1] },
-  deadlineTitle: { fontSize: c.typography.body, fontWeight: c.typography.semibold, color: c.neutral950, flex: 1 },
+  deadlineTitle: { fontSize: c.typography.body, fontWeight: c.typography.semibold, color: c.ink, flex: 1 },
   deadlineMeta: { flexDirection: 'row', alignItems: 'center', gap: c.spacing[2], marginBottom: c.spacing[1] },
   courseCode: { fontSize: c.typography.caption, color: c.neutral500, fontWeight: c.typography.medium },
   dueRow: { flexDirection: 'row', alignItems: 'center', gap: c.spacing[2] },
@@ -529,13 +529,13 @@ const makeStyles = (theme: Theme) => {
   dueDateOverdue: { color: c.overdue },
   dueBadge: {
     fontSize: c.typography.micro, fontWeight: c.typography.semibold, color: c.neutral500,
-    backgroundColor: c.neutral100, paddingHorizontal: c.spacing[2], paddingVertical: c.spacing[0.5], borderRadius: c.radii.pill,
+    backgroundColor: c.subtleFill, paddingHorizontal: c.spacing[2], paddingVertical: c.spacing[0.5], borderRadius: c.radii.pill,
   },
   dueBadgeUrgent: { color: c.white, backgroundColor: c.workloadOverloadedBg },
   dueBadgeOverdue: { color: c.white, backgroundColor: c.overdueBg },
   dueBadgeToday: { color: c.white, backgroundColor: c.workloadBalancedBg },
   checkButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  checkCircle: { width: 24, height: 24, borderRadius: c.radii.pill, borderWidth: 2, borderColor: c.neutral200 },
-  checkCircleDone: { backgroundColor: c.neutral950, borderColor: c.neutral950, alignItems: 'center', justifyContent: 'center' },
+  checkCircle: { width: 24, height: 24, borderRadius: c.radii.pill, borderWidth: 2, borderColor: c.hairline },
+  checkCircleDone: { backgroundColor: c.ink, borderColor: c.ink, alignItems: 'center', justifyContent: 'center' },
   });
 };

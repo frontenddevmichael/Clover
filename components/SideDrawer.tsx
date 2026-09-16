@@ -21,7 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
-import { useTheme } from '@/lib/theme';
+import { useTheme, useStyles, type Theme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -75,6 +75,7 @@ const NAV_ICNS: Record<string, React.FC<{ color: string }>> = {
 
 export function SideDrawer({ visible, onClose }: SideDrawerProps) {
   const t = useTheme();
+  const styles = useStyles(makeStyles);
   const router = useRouter();
   const { userId } = useAuth();
   const user = useQuery(api.users.getById, userId ? { userId } : 'skip');
@@ -111,7 +112,7 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
     <View style={StyleSheet.absoluteFill} pointerEvents={visible ? 'auto' : 'none'}>
       {/* Backdrop */}
       <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={onClose} />
       </Animated.View>
 
       {/* Drawer panel */}
@@ -172,7 +173,7 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (theme: Theme) => StyleSheet.create({
   backdrop: {
     position: 'absolute',
     top: 0,
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: 0,
     width: DRAWER_W,
-    backgroundColor: '#FAFAF8',
+    backgroundColor: theme.colors.canvas,
     paddingTop: 60,
     paddingHorizontal: 20,
     shadowColor: '#000',

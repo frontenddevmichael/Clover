@@ -25,7 +25,7 @@ export function CornerStamp({
   style,
 }: CornerStampProps) {
   const t = useTheme();
-  const bg = color || t.colors.neutral950;
+  const bg = color || t.colors.ink;
   const fg = textColor || t.colors.fillInk;
   const scale = useRef(new Animated.Value(0)).current;
 
@@ -153,7 +153,7 @@ export function BoldDivider({
   style,
 }: BoldDividerProps) {
   const t = useTheme();
-  const c = color || t.colors.neutral950;
+  const c = color || t.colors.ink;
   const size = 12;
 
   return (
@@ -191,7 +191,7 @@ export function ThickFrame({
   style,
 }: ThickFrameProps) {
   const t = useTheme();
-  const c = borderColor || t.colors.neutral950;
+  const c = borderColor || t.colors.ink;
   return (
     <View
       style={[
@@ -300,7 +300,7 @@ export function CountBadge({
   style,
 }: CountBadgeProps) {
   const t = useTheme();
-  const bg = color || t.colors.neutral950;
+  const bg = color || t.colors.ink;
   const fg = textColor || t.colors.fillInk;
   const scale = useRef(new Animated.Value(0)).current;
 

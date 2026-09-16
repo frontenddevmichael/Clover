@@ -102,7 +102,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     backgroundColor: theme.colors.glassSurface, borderRadius: theme.radii.sheet,
     padding: theme.spacing[5], borderWidth: 1, borderColor: theme.colors.hairline,
   },
-  dragHandle: { width: 36, height: 4, borderRadius: theme.radii.pill, backgroundColor: theme.colors.neutral200, alignSelf: 'center', marginBottom: theme.spacing[4] },
+  dragHandle: { width: 36, height: 4, borderRadius: theme.radii.pill, backgroundColor: theme.colors.hairline, alignSelf: 'center', marginBottom: theme.spacing[4] },
   proposalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing[4] },
   proposalTitle: { fontSize: theme.typography.title, fontWeight: theme.typography.bold, color: theme.colors.ink },
   explanationCard: { marginBottom: theme.spacing[4] },
@@ -121,7 +121,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   changeDetail: { fontSize: theme.typography.caption, color: theme.colors.inkSecondary, marginTop: theme.spacing[0.5] },
   proposalActions: { flexDirection: 'row', gap: theme.spacing[3], marginBottom: theme.spacing[4] },
   actionButton: { flex: 1 },
-  reproposeSection: { borderTopWidth: 1, borderTopColor: theme.colors.neutral200, paddingTop: theme.spacing[4], marginBottom: theme.spacing[4] },
+  reproposeSection: { borderTopWidth: 1, borderTopColor: theme.colors.hairline, paddingTop: theme.spacing[4], marginBottom: theme.spacing[4] },
   reproposeInputField: {
     fontSize: theme.typography.body,
     color: theme.colors.ink,

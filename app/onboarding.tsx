@@ -248,10 +248,10 @@ export default function OnboardingScreen() {
         </View>
 
         <Animated.View style={[styles.splashContent, splashAnim]}>
-          <CornerStamp label="CLOVER" color={t.colors.neutral950} textColor={t.colors.fillInk} rotation={-8} style={styles.splashStamp} />
+          <CornerStamp label="CLOVER" color={t.colors.ink} textColor={t.colors.fillInk} rotation={-8} style={styles.splashStamp} />
           <CloverLogo size={220} animated />
           <Text style={styles.splashTitle}>Clover</Text>
-          <BoldDivider shape="diamond" color={t.colors.neutral950} style={{ marginTop: 16, marginBottom: 8 }} />
+          <BoldDivider shape="diamond" color={t.colors.ink} style={{ marginTop: 16, marginBottom: 8 }} />
           <Text style={styles.splashSubtitle}>Study planner for Nigerian students</Text>
         </Animated.View>
       </View>
@@ -302,9 +302,9 @@ export default function OnboardingScreen() {
             <TouchableOpacity onPress={() => transitionTo('welcome')} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
-            <CornerStamp label="SIGN IN" color={t.colors.neutral950} textColor={t.colors.fillInk} style={styles.formStamp} />
+            <CornerStamp label="SIGN IN" color={t.colors.ink} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Welcome back</Text>
-            <BoldDivider shape="circle" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
+            <BoldDivider shape="circle" color={t.colors.ink} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>Sign in with your email and passcode</Text>
 
             <ThickFrame borderWidth={2} style={styles.formFrame}>
@@ -363,7 +363,7 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
             <CornerStamp label="CREATE" color={t.colors.fill} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Create your account</Text>
-            <BoldDivider shape="square" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
+            <BoldDivider shape="square" color={t.colors.ink} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>Start planning your semester</Text>
 
             <ThickFrame borderWidth={2} style={styles.formFrame}>
@@ -407,7 +407,7 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
             <CornerStamp label="YOU" color={t.colors.workloadBalancedBg} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Your university</Text>
-            <BoldDivider shape="diamond" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
+            <BoldDivider shape="diamond" color={t.colors.ink} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>Help us tailor your experience</Text>
 
             <ThickFrame borderWidth={2} style={styles.formFrame}>
@@ -459,7 +459,7 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
             <CornerStamp label="SECURE" color={t.colors.workloadOverloadedBg} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Set a passcode</Text>
-            <BoldDivider shape="circle" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
+            <BoldDivider shape="circle" color={t.colors.ink} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>At least 4 digits to secure your account</Text>
 
             <ThickFrame borderWidth={2} style={styles.formFrame}>
@@ -499,7 +499,7 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
             <CornerStamp label="CONFIRM" color={t.colors.fill} textColor={t.colors.fillInk} style={styles.formStamp} />
             <Text style={styles.formTitle}>Confirm passcode</Text>
-            <BoldDivider shape="diamond" color={t.colors.neutral950} style={{ marginBottom: 20 }} />
+            <BoldDivider shape="diamond" color={t.colors.ink} style={{ marginBottom: 20 }} />
             <Text style={styles.formSubtitle}>Enter your passcode again</Text>
 
             <ThickFrame borderWidth={2} style={styles.formFrame}>
@@ -549,7 +549,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   splashDecorTop: { position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', opacity: 0.5 },
   splashDecorBottom: { position: 'absolute', bottom: 80, left: 0, right: 0, alignItems: 'center', opacity: 0.4 },
   splashStamp: { position: 'absolute', top: -40, right: -20, zIndex: 10 },
-  splashTitle: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.neutral900, marginTop: theme.spacing[5], letterSpacing: -1 },
+  splashTitle: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.ink, marginTop: theme.spacing[5], letterSpacing: -1 },
   splashSubtitle: { fontSize: theme.typography.body, color: theme.colors.inkSecondary, marginTop: theme.spacing[2] },
   container: { flex: 1, backgroundColor: theme.colors.canvas },
   top: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: theme.spacing[8] },
@@ -557,7 +557,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   bottom: { paddingHorizontal: theme.spacing[6], paddingBottom: theme.spacing[12], gap: theme.spacing[3] },
   welcomeDecor: { position: 'absolute', top: 40, left: 0, right: 0, alignItems: 'center', opacity: 0.3 },
   welcomeStamp: { position: 'absolute', top: -30, right: -10, zIndex: 10 },
-  welcomeTitle: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.neutral900, textAlign: 'center', marginTop: theme.spacing[5] },
+  welcomeTitle: { fontSize: theme.typography.display, fontWeight: theme.typography.bold, color: theme.colors.ink, textAlign: 'center', marginTop: theme.spacing[5] },
   welcomeSubtitle: { fontSize: theme.typography.body, color: theme.colors.inkSecondary, textAlign: 'center', marginTop: theme.spacing[2.5], lineHeight: theme.spacing[6], paddingHorizontal: theme.spacing[4] },
   formScroll: { padding: theme.spacing[6], flexGrow: 1, justifyContent: 'center' },
   formStamp: { position: 'absolute', top: -8, right: 0, zIndex: 10 },
@@ -565,7 +565,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   formInner: { padding: theme.spacing[5] },
   backBtn: { marginBottom: theme.spacing[6] },
   backText: { fontSize: theme.typography.secondary, color: theme.colors.inkSecondary, fontWeight: '500' },
-  formTitle: { fontSize: theme.typography.display, fontWeight: '700', color: theme.colors.neutral900 },
+  formTitle: { fontSize: theme.typography.display, fontWeight: '700', color: theme.colors.ink },
   formSubtitle: { fontSize: theme.typography.secondary, color: theme.colors.inkSecondary, marginTop: 4, marginBottom: theme.spacing[7] },
   label: { fontSize: theme.typography.caption, fontWeight: '600', color: theme.colors.neutral600, marginBottom: theme.spacing[2], marginTop: theme.spacing[4] },
   input: {
@@ -576,7 +576,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[3.5],
     fontSize: theme.typography.body,
-    color: theme.colors.neutral900,
+    color: theme.colors.ink,
   },
   primaryBtn: {
     backgroundColor: theme.colors.fill,
@@ -593,7 +593,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     paddingVertical: theme.spacing[4],
     alignItems: 'center',
   },
-  secondaryBtnText: { color: theme.colors.neutral900, fontSize: theme.typography.body, fontWeight: theme.typography.medium },
+  secondaryBtnText: { color: theme.colors.ink, fontSize: theme.typography.body, fontWeight: theme.typography.medium },
   disabledBtn: { opacity: 0.5 },
   levelRow: { flexDirection: 'row', gap: theme.spacing[2] },
   levelBtn: {
@@ -606,7 +606,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  levelBtnActive: { backgroundColor: theme.colors.fill, borderColor: theme.colors.neutral900 },
+  levelBtnActive: { backgroundColor: theme.colors.fill, borderColor: theme.colors.ink },
   levelText: { fontSize: theme.typography.secondary, fontWeight: '500', color: theme.colors.neutral600 },
   levelTextActive: { color: theme.colors.fillInk },
 });

@@ -179,7 +179,7 @@ export default function SocialScreen() {
                         handleToggleShare(course.code, val)
                       }
                       trackColor={{
-                        false: t.colors.neutral200,
+                        false: t.colors.hairline,
                         true: t.colors.neutral500,
                       }}
                       thumbColor={t.colors.white}
@@ -210,11 +210,11 @@ export default function SocialScreen() {
                     color={
                       member.shareFreeTime
                         ? t.colors.workloadLight
-                        : t.colors.neutral200
+                        : t.colors.hairline
                     }
                     textColor={
                       member.shareFreeTime
-                        ? t.colors.neutral950
+                        ? t.colors.ink
                         : t.colors.neutral600
                     }
                   />
@@ -309,7 +309,7 @@ export default function SocialScreen() {
                     value={userRoomMap[course.code]?.shareFreeTime ?? false}
                     onValueChange={(val) => handleToggleShare(course.code, val)}
                     trackColor={{
-                      false: t.colors.neutral200,
+                      false: t.colors.hairline,
                       true: t.colors.neutral500,
                     }}
                     thumbColor={t.colors.white}
@@ -361,7 +361,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     width: theme.spacing[8],
     height: theme.spacing[1],
     borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.neutral200,
+    backgroundColor: theme.colors.hairline,
     marginBottom: theme.spacing[4],
   },
   sheetTitle: {
@@ -381,7 +381,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: theme.spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.neutral100,
+    borderBottomColor: theme.colors.subtleFill,
   },
   shareRowCode: {
     fontSize: theme.typography.body,
@@ -432,7 +432,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   roomCardSelected: {
     borderWidth: 2,
-    borderColor: theme.colors.neutral950,
+    borderColor: theme.colors.ink,
   },
   roomRow: {
     flexDirection: 'row',
@@ -478,7 +478,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     paddingVertical: theme.spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.neutral200,
+    borderBottomColor: theme.colors.hairline,
   },
   memberName: {
     fontSize: theme.typography.body,
@@ -493,7 +493,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     paddingHorizontal: theme.spacing[2],
     paddingVertical: theme.spacing[1],
     borderRadius: theme.radii.chip,
-    backgroundColor: theme.colors.neutral200,
+    backgroundColor: theme.colors.hairline,
   },
   overlapTime: {
     fontSize: theme.typography.caption,
@@ -510,7 +510,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: theme.spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.neutral200,
+    borderBottomColor: theme.colors.hairline,
   },
   deadlineTitle: {
     fontSize: theme.typography.body,

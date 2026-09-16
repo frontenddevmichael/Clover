@@ -304,7 +304,7 @@ export default function SessionModal() {
                 style={[
                   styles.courseOptionText,
                   selectedCourse === course._id && {
-                    color: t.colors.neutral950,
+                    color: t.colors.ink,
                   },
                 ]}
               >
@@ -538,7 +538,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.neutral200,
+    backgroundColor: theme.colors.hairline,
     marginBottom: theme.spacing[3],
   },
   sheetTitle: {
@@ -594,7 +594,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   typeOptionSelected: {
     backgroundColor: theme.colors.fill,
-    borderColor: theme.colors.neutral950,
+    borderColor: theme.colors.ink,
   },
   typeOptionText: {
     fontSize: theme.typography.caption,
@@ -615,7 +615,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     width: 48,
     height: 28,
     borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.neutral200,
+    backgroundColor: theme.colors.hairline,
     padding: 2,
     justifyContent: 'center',
     alignItems: 'flex-start',
@@ -646,7 +646,7 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   dayOptionSelected: {
     backgroundColor: theme.colors.fill,
-    borderColor: theme.colors.neutral950,
+    borderColor: theme.colors.ink,
   },
   dayOptionText: {
     fontSize: theme.typography.caption,
