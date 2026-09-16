@@ -27,6 +27,8 @@ import {
   GeoDots,
   CountBadge,
 } from '@/components/neoBrutalist';
+import { FocusStatsSkeleton } from '@/components/SkeletonLoader';
+import { useToast } from '@/components/Toast';
 import * as Haptics from 'expo-haptics';
 import * as KeepAwake from 'expo-keep-awake';
 import Constants from 'expo-constants';
@@ -47,6 +49,7 @@ export default function FocusScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
   const router = useRouter();
+  const toast = useToast();
 
   const todayStats = useQuery(
     api.focusSessions.todayStats,
@@ -106,7 +109,9 @@ export default function FocusScreen() {
     if (currentSessionId) {
       try {
         await completeSession({ sessionId: currentSessionId as any });
-      } catch {}
+      } catch {
+        toast.error('Failed to save session');
+      }
       setCurrentSessionId(null);
     }
 
@@ -132,7 +137,9 @@ export default function FocusScreen() {
       setCurrentSessionId(id);
       setRemainingSeconds(totalSeconds);
       setIsActive(true);
-    } catch {}
+    } catch {
+      toast.error('Could not start session');
+    }
   }, [userId, selectedMode, totalSeconds, startSession]);
 
   const handlePause = useCallback(() => {
@@ -162,7 +169,9 @@ export default function FocusScreen() {
             onPress: async () => {
               try {
                 await cancelSession({ sessionId: currentSessionId as any });
-              } catch {}
+              } catch {
+                toast.error('Failed to cancel session');
+              }
               setCurrentSessionId(null);
               setRemainingSeconds(totalSeconds);
             },
@@ -203,26 +212,30 @@ export default function FocusScreen() {
       </View>
 
       {/* Stats bar */}
-      <View style={styles.statsBar}>
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: t.colors.ink }]}>
-            {todayStats?.pomodoroCount ?? 0}
-          </Text>
-          <Text style={[styles.statLabel, { color: t.colors.inkSecondary }]}>focus</Text>
+      {todayStats === undefined ? (
+        <FocusStatsSkeleton />
+      ) : (
+        <View style={styles.statsBar}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: t.colors.ink }]}>
+              {todayStats?.pomodoroCount ?? 0}
+            </Text>
+            <Text style={[styles.statLabel, { color: t.colors.inkSecondary }]}>focus</Text>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: t.colors.hairline }]} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: t.colors.ink }]}>
+              {todayStats?.totalMinutes ?? 0}m
+            </Text>
+            <Text style={[styles.statLabel, { color: t.colors.inkSecondary }]}>total</Text>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: t.colors.hairline }]} />
+          <View style={styles.statItem}>
+            <CountBadge count={todayStats?.sessionCount ?? 0} size={24} />
+            <Text style={[styles.statLabel, { color: t.colors.inkSecondary }]}>sessions</Text>
+          </View>
         </View>
-        <View style={[styles.statDivider, { backgroundColor: t.colors.hairline }]} />
-        <View style={styles.statItem}>
-          <Text style={[styles.statValue, { color: t.colors.ink }]}>
-            {todayStats?.totalMinutes ?? 0}m
-          </Text>
-          <Text style={[styles.statLabel, { color: t.colors.inkSecondary }]}>total</Text>
-        </View>
-        <View style={[styles.statDivider, { backgroundColor: t.colors.hairline }]} />
-        <View style={styles.statItem}>
-          <CountBadge count={todayStats?.sessionCount ?? 0} size={24} />
-          <Text style={[styles.statLabel, { color: t.colors.inkSecondary }]}>sessions</Text>
-        </View>
-      </View>
+      )}
 
       {/* Mode selector */}
       <View style={styles.modeRow}>
@@ -295,11 +308,17 @@ export default function FocusScreen() {
       </View>
 
       {/* Today's sessions */}
-      {completedSessions.length > 0 && (
-        <View style={styles.historySection}>
-          <Text style={[styles.historyTitle, { color: t.colors.inkSecondary }]}>
-            Today
-          </Text>
+      <View style={styles.historySection}>
+        <Text style={[styles.historyTitle, { color: t.colors.inkSecondary }]}>
+          Today
+        </Text>
+        {completedSessions.length === 0 ? (
+          <View style={{ paddingHorizontal: t.spacing[5], paddingVertical: t.spacing[3] }}>
+            <Text style={{ fontSize: t.typography.secondary, color: t.colors.inkSecondary, textAlign: 'center' }}>
+              No sessions yet — start a focus timer above
+            </Text>
+          </View>
+        ) : (
           <FlatList
             data={completedSessions}
             keyExtractor={(item) => item._id}
@@ -320,8 +339,8 @@ export default function FocusScreen() {
               );
             }}
           />
-        </View>
-      )}
+        )}
+      </View>
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );

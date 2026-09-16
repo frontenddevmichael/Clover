@@ -1,6 +1,6 @@
 // Insights screen — analytics, charts, and productivity trends.
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from 'convex/react';
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
@@ -10,6 +10,8 @@ import { useAuth } from '@/lib/auth';
 import { Card } from '@/components/Card';
 import { HeaderBar } from '@/components/HeaderBar';
 import { SideDrawer } from '@/components/SideDrawer';
+import { EmptyState } from '@/components/EmptyState';
+import { InsightsSkeleton } from '@/components/SkeletonLoader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CornerStamp, GeoDots, CountBadge } from '@/components/neoBrutalist';
 import {
@@ -136,6 +138,7 @@ export default function InsightsScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
   const sessions = useQuery(api.sessions.listByUser, userId ? { userId } : 'skip');
   const courses = useQuery(api.courses.listByUser, userId ? { userId } : 'skip');
@@ -147,6 +150,13 @@ export default function InsightsScreen() {
     api.focusSessions.listToday,
     userId ? { userId } : 'skip'
   );
+
+  const isLoading = sessions === undefined || courses === undefined;
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  }, []);
 
   const stats = useMemo(() => {
     if (!sessions || !deadlines) return null;
@@ -187,8 +197,22 @@ export default function InsightsScreen() {
         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Overview stats */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.inkSecondary} />}
+      >
+        {isLoading ? (
+          <InsightsSkeleton />
+        ) : (sessions ?? []).length === 0 ? (
+          <EmptyState
+            title="No data yet"
+            message="Start studying and completing focus sessions to see your insights here."
+            scene="chart"
+          />
+        ) : (
+          <>
+            {/* Overview stats */}
         <Text style={styles.sectionTitle}>This Week</Text>
         <View style={styles.statsGrid}>
           <StatCard label="Study hours" value={Math.round((stats?.totalMinutesThisWeek ?? 0) / 60)} unit="hrs" />
@@ -250,11 +274,13 @@ export default function InsightsScreen() {
         <Card style={styles.motivationCard}>
           <CornerStamp label="TIP" color={t.colors.fill} textColor={t.colors.fillInk} style={styles.tipStamp} />
           <Text style={[styles.motivationText, { color: t.colors.ink }]}>
-            {stats?.streakDays ?? 0 >= 3
+            {((stats?.streakDays ?? 0) >= 3
               ? `Great streak! You've studied ${stats?.streakDays} days in a row. Keep it up!`
-              : 'Try to study a little each day. Even 30 minutes builds a strong habit.'}
+              : 'Try to study a little each day. Even 30 minutes builds a strong habit.')}
           </Text>
         </Card>
+          </>
+        )}
       </ScrollView>
       <SideDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>

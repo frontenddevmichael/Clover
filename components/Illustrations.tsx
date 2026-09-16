@@ -19,6 +19,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const STROKE = 1.5;
 const ROUND = 'round' as const;
@@ -295,5 +296,133 @@ function TextLine({
   }));
   return (
     <AnimatedLine x1={x1} y1={y} x2={x2} y2={y + 1} stroke={baseColors.neutral300} strokeWidth={0.75} strokeLinecap={ROUND} animatedProps={props} />
+  );
+}
+
+// ── Timer illustration (circle clock + hands) ──────────────
+export function TimerIllustration({ size = 96 }: { size?: number }) {
+  const reduced = useReducedMotion() ?? false;
+  const p = useSharedValue(0);
+  useEffect(() => {
+    if (reduced) { p.value = 1; return; }
+    p.value = withDelay(200, withTiming(1, { duration: 1000, easing: Easing.out(Easing.cubic) }));
+  }, [reduced]);
+  return (
+    <View style={{ width: size, height: size }}>
+      <Svg viewBox="0 0 120 120" width={size} height={size}>
+        <TimerBody p={p} />
+      </Svg>
+    </View>
+  );
+}
+
+function TimerBody({ p }: { p: ReturnType<typeof useSharedValue<number>> }) {
+  const t = useTheme();
+  const circleProps = useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(p.value, [0, 0.5], [200, 0]),
+    opacity: interpolate(p.value, [0, 0.03], [0, 1]),
+  }));
+  const handProps = useAnimatedProps(() => ({
+    opacity: interpolate(p.value, [0.4, 0.7], [0, 1]),
+  }));
+  const dotProps = useAnimatedProps(() => ({
+    opacity: interpolate(p.value, [0.7, 0.9], [0, 1]),
+  }));
+  return (
+    <>
+      <AnimatedCircle cx="60" cy="62" r="35" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" strokeDasharray={200} animatedProps={circleProps} />
+      <AnimatedLine x1="60" y1="62" x2="60" y2="40" stroke={t.colors.ink} strokeWidth={2} strokeLinecap={ROUND} animatedProps={handProps} />
+      <AnimatedLine x1="60" y1="62" x2="78" y2="62" stroke={t.colors.ink} strokeWidth={1.5} strokeLinecap={ROUND} animatedProps={handProps} />
+      <AnimatedCircle cx="60" cy="30" r="3" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" animatedProps={dotProps} />
+      <AnimatedCircle cx="60" cy="94" r="3" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" animatedProps={dotProps} />
+      <AnimatedCircle cx="28" cy="62" r="3" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" animatedProps={dotProps} />
+      <AnimatedCircle cx="92" cy="62" r="3" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" animatedProps={dotProps} />
+    </>
+  );
+}
+
+// ── People illustration (two figures with overlap arc) ──────
+export function PeopleIllustration({ size = 96 }: { size?: number }) {
+  const reduced = useReducedMotion() ?? false;
+  const p = useSharedValue(0);
+  useEffect(() => {
+    if (reduced) { p.value = 1; return; }
+    p.value = withDelay(200, withTiming(1, { duration: 1000, easing: Easing.out(Easing.cubic) }));
+  }, [reduced]);
+  return (
+    <View style={{ width: size, height: size }}>
+      <Svg viewBox="0 0 120 120" width={size} height={size}>
+        <PeopleBody p={p} />
+      </Svg>
+    </View>
+  );
+}
+
+function PeopleBody({ p }: { p: ReturnType<typeof useSharedValue<number>> }) {
+  const t = useTheme();
+  const leftProps = useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(p.value, [0, 0.4], [150, 0]),
+    opacity: interpolate(p.value, [0, 0.03], [0, 1]),
+  }));
+  const rightProps = useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(p.value, [0.2, 0.6], [150, 0]),
+    opacity: interpolate(p.value, [0.2, 0.25], [0, 1]),
+  }));
+  const arcProps = useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(p.value, [0.5, 0.9], [80, 0]),
+    opacity: interpolate(p.value, [0.5, 0.55], [0, 1]),
+  }));
+  return (
+    <>
+      {/* Left person */}
+      <AnimatedCircle cx="44" cy="42" r="10" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" strokeDasharray={63} animatedProps={leftProps} />
+      <AnimatedPath d="M 30 75 C 30 58, 58 58, 58 75" stroke={t.colors.ink} strokeWidth={STROKE} strokeLinecap={ROUND} fill="none" strokeDasharray={80} animatedProps={leftProps} />
+      {/* Right person */}
+      <AnimatedCircle cx="76" cy="42" r="10" stroke={baseColors.neutral300} strokeWidth={STROKE} fill="none" strokeDasharray={63} animatedProps={rightProps} />
+      <AnimatedPath d="M 62 75 C 62 58, 90 58, 90 75" stroke={baseColors.neutral300} strokeWidth={STROKE} strokeLinecap={ROUND} fill="none" strokeDasharray={80} animatedProps={rightProps} />
+      {/* Connection arc */}
+      <AnimatedPath d="M 44 85 Q 60 72, 76 85" stroke={t.colors.ink} strokeWidth={1.5} strokeLinecap={ROUND} fill="none" strokeDasharray={80} animatedProps={arcProps} />
+    </>
+  );
+}
+
+// ── Chart illustration (bar chart sketch) ───────────────────
+export function ChartIllustration({ size = 96 }: { size?: number }) {
+  const reduced = useReducedMotion() ?? false;
+  const p = useSharedValue(0);
+  useEffect(() => {
+    if (reduced) { p.value = 1; return; }
+    p.value = withDelay(200, withTiming(1, { duration: 1000, easing: Easing.out(Easing.cubic) }));
+  }, [reduced]);
+  return (
+    <View style={{ width: size, height: size }}>
+      <Svg viewBox="0 0 120 120" width={size} height={size}>
+        <ChartBody p={p} />
+      </Svg>
+    </View>
+  );
+}
+
+function ChartBody({ p }: { p: ReturnType<typeof useSharedValue<number>> }) {
+  const t = useTheme();
+  const axisProps = useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(p.value, [0, 0.3], [120, 0]),
+    opacity: interpolate(p.value, [0, 0.03], [0, 1]),
+  }));
+  const barProps = (from: number, height: number) => useAnimatedProps(() => ({
+    strokeDashoffset: interpolate(p.value, [from, from + 0.25], [height, 0]),
+    opacity: interpolate(p.value, [from, from + 0.05], [0, 1]),
+  }));
+  return (
+    <>
+      {/* Axes */}
+      <AnimatedLine x1="25" y1="20" x2="25" y2="95" stroke={t.colors.ink} strokeWidth={STROKE} strokeLinecap={ROUND} strokeDasharray={120} animatedProps={axisProps} />
+      <AnimatedLine x1="25" y1="95" x2="100" y2="95" stroke={t.colors.ink} strokeWidth={STROKE} strokeLinecap={ROUND} strokeDasharray={120} animatedProps={axisProps} />
+      {/* Bars */}
+      <AnimatedRect x="35" y="60" width="10" height="35" rx="2" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" strokeDasharray={35} animatedProps={barProps(0.2, 35)} />
+      <AnimatedRect x="50" y="40" width="10" height="55" rx="2" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" strokeDasharray={55} animatedProps={barProps(0.3, 55)} />
+      <AnimatedRect x="65" y="50" width="10" height="45" rx="2" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" strokeDasharray={45} animatedProps={barProps(0.4, 45)} />
+      <AnimatedRect x="80" y="30" width="10" height="65" rx="2" stroke={t.colors.ink} strokeWidth={STROKE} fill="none" strokeDasharray={65} animatedProps={barProps(0.5, 65)} />
+    </>
   );
 }

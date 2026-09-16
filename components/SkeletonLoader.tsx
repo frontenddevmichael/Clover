@@ -105,3 +105,150 @@ export function ScheduleSkeleton() {
     </View>
   );
 }
+
+// ─── Focus stats skeleton ──────────────────────────────────
+export function FocusStatsSkeleton() {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', gap: t.spacing[3] }}>
+      {[1, 2, 3].map((i) => (
+        <View
+          key={i}
+          style={{
+            flex: 1,
+            backgroundColor: t.colors.tier1,
+            borderRadius: t.radii.card,
+            borderWidth: 1,
+            borderColor: t.colors.hairline,
+            padding: t.spacing[3],
+            alignItems: 'center',
+          }}
+        >
+          <ShimmerSweep width={36} height={20} borderRadius={4} />
+          <View style={{ height: 4 }} />
+          <ShimmerSweep width={48} height={10} borderRadius={3} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Insights skeleton ──────────────────────────────────────
+export function InsightsSkeleton() {
+  const t = useTheme();
+  return (
+    <View style={{ padding: t.spacing[5], gap: t.spacing[4] }}>
+      {/* Stat cards 2x2 */}
+      <View style={{ flexDirection: 'row', gap: t.spacing[3] }}>
+        {[1, 2].map((i) => (
+          <View key={i} style={{ flex: 1, backgroundColor: t.colors.tier1, borderRadius: t.radii.card, borderWidth: 1, borderColor: t.colors.hairline, padding: t.spacing[4] }}>
+            <ShimmerSweep width={24} height={24} borderRadius={6} />
+            <View style={{ height: 8 }} />
+            <ShimmerSweep width={48} height={20} borderRadius={4} />
+            <View style={{ height: 4 }} />
+            <ShimmerSweep width={64} height={10} borderRadius={3} />
+          </View>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: t.spacing[3] }}>
+        {[1, 2].map((i) => (
+          <View key={i} style={{ flex: 1, backgroundColor: t.colors.tier1, borderRadius: t.radii.card, borderWidth: 1, borderColor: t.colors.hairline, padding: t.spacing[4] }}>
+            <ShimmerSweep width={24} height={24} borderRadius={6} />
+            <View style={{ height: 8 }} />
+            <ShimmerSweep width={48} height={20} borderRadius={4} />
+            <View style={{ height: 4 }} />
+            <ShimmerSweep width={64} height={10} borderRadius={3} />
+          </View>
+        ))}
+      </View>
+      {/* Chart placeholder */}
+      <View style={{ backgroundColor: t.colors.tier1, borderRadius: t.radii.card, borderWidth: 1, borderColor: t.colors.hairline, padding: t.spacing[4] }}>
+        <ShimmerSweep width={100} height={14} borderRadius={4} />
+        <View style={{ height: 12 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 80 }}>
+          {[40, 65, 50, 80, 35, 55, 70].map((h, i) => (
+            <ShimmerSweep key={i} width={28} height={h} borderRadius={4} />
+          ))}
+        </View>
+      </View>
+      {/* Horizontal bars */}
+      <View style={{ backgroundColor: t.colors.tier1, borderRadius: t.radii.card, borderWidth: 1, borderColor: t.colors.hairline, padding: t.spacing[4] }}>
+        <ShimmerSweep width={80} height={14} borderRadius={4} />
+        <View style={{ height: 12 }} />
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={{ marginBottom: 8 }}>
+            <ShimmerSweep width={60} height={10} borderRadius={3} />
+            <View style={{ height: 4 }} />
+            <ShimmerSweep width={50 + i * 15} height={8} borderRadius={4} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ─── Rooms skeleton ──────────────────────────────────────────
+export function RoomsSkeleton() {
+  const t = useTheme();
+  return (
+    <View style={{ padding: t.spacing[5], gap: t.spacing[3] }}>
+      {/* Join bar */}
+      <View style={{ flexDirection: 'row', gap: t.spacing[2], alignItems: 'center' }}>
+        <ShimmerSweep width={200} height={44} borderRadius={t.radii.card} />
+        <ShimmerSweep width={72} height={44} borderRadius={t.radii.card} />
+      </View>
+      {[1, 2, 3].map((i) => (
+        <View
+          key={i}
+          style={{
+            backgroundColor: t.colors.tier1,
+            borderRadius: t.radii.card,
+            borderWidth: 1,
+            borderColor: t.colors.hairline,
+            padding: t.spacing[4],
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: t.spacing[3],
+          }}
+        >
+          <ShimmerSweep width={36} height={36} borderRadius={18} />
+          <View style={{ flex: 1 }}>
+            <ShimmerSweep width={80} height={14} borderRadius={4} />
+            <View style={{ height: 4 }} />
+            <ShimmerSweep width={120} height={10} borderRadius={3} />
+          </View>
+          <ShimmerSweep width={40} height={24} borderRadius={12} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Profile skeleton ────────────────────────────────────────
+export function ProfileSkeleton() {
+  const t = useTheme();
+  return (
+    <View style={{ padding: t.spacing[5], gap: t.spacing[4], alignItems: 'center' }}>
+      <ShimmerSweep width={64} height={64} borderRadius={32} />
+      <ShimmerSweep width={120} height={12} borderRadius={4} />
+      <View style={{ width: '100%', gap: t.spacing[3], marginTop: t.spacing[4] }}>
+        {[1, 2, 3, 4].map((i) => (
+          <View
+            key={i}
+            style={{
+              backgroundColor: t.colors.tier1,
+              borderRadius: t.radii.card,
+              borderWidth: 1,
+              borderColor: t.colors.hairline,
+              padding: t.spacing[4],
+            }}
+          >
+            <ShimmerSweep width={60} height={10} borderRadius={3} />
+            <View style={{ height: 6 }} />
+            <ShimmerSweep width={280} height={36} borderRadius={t.radii.chip} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}

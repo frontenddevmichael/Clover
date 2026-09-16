@@ -9,7 +9,7 @@ import {
   Dimensions,
   Pressable,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import Animated, {
   useSharedValue,
@@ -23,6 +23,7 @@ import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { useTheme, useStyles, type Theme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
+import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const DRAWER_W = SCREEN_W * 0.78;
@@ -77,6 +78,7 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const router = useRouter();
+  const pathname = usePathname();
   const { userId } = useAuth();
   const user = useQuery(api.users.getById, userId ? { userId } : 'skip');
   const reduced = useReducedMotion() ?? false;
@@ -140,6 +142,11 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
             <Text style={[styles.profileName, { color: t.colors.ink }]}>
               {user?.name ?? 'Student'}
             </Text>
+            {user?.institution ? (
+              <Text style={[styles.profileInstitution, { color: t.colors.inkSecondary }]}>
+                {user.institution}
+              </Text>
+            ) : null}
             <Text style={[styles.profileLink, { color: t.colors.inkSecondary }]}>
               Edit Profile →
             </Text>
@@ -152,18 +159,20 @@ export function SideDrawer({ visible, onClose }: SideDrawerProps) {
         {/* Navigation items */}
         {NAV_ITEMS.map((item) => {
           const Icon = NAV_ICNS[item.key];
+          const isActive = pathname.includes(item.route.replace('/(tabs)', ''));
           return (
             <TouchableOpacity
               key={item.key}
-              style={styles.navItem}
+              style={[styles.navItem, isActive && { backgroundColor: t.colors.subtleFill, borderRadius: t.radii.card }]}
               activeOpacity={0.6}
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                 onClose();
                 setTimeout(() => router.push(item.route as any), 150);
               }}
             >
-              {Icon && <Icon color={t.colors.ink} />}
-              <Text style={[styles.navLabel, { color: t.colors.ink }]}>{item.label}</Text>
+              {Icon && <Icon color={isActive ? t.colors.ink : t.colors.inkSecondary} />}
+              <Text style={[styles.navLabel, { color: isActive ? t.colors.ink : t.colors.inkSecondary, fontWeight: isActive ? t.typography.semibold : t.typography.medium }]}>{item.label}</Text>
               <Text style={[styles.navArrow, { color: t.colors.inkSecondary }]}>→</Text>
             </TouchableOpacity>
           );
@@ -221,6 +230,11 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   profileName: {
     fontSize: 17,
     fontWeight: '600',
+    marginBottom: 2,
+  },
+  profileInstitution: {
+    fontSize: 13,
+    fontWeight: '400',
     marginBottom: 2,
   },
   profileLink: {

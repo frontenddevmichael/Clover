@@ -10,7 +10,9 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/components/Toast';
+import { ProfileSkeleton } from '@/components/SkeletonLoader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GeoDots } from '@/components/neoBrutalist';
 
 export default function ProfileScreen() {
   const t = useTheme();
@@ -78,18 +80,25 @@ export default function ProfileScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
           <Text style={styles.backBtnText}>Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Profile</Text>
+        <View>
+          <Text style={styles.title}>Profile</Text>
+          <GeoDots rows={1} cols={6} dotSize={3} gap={6} color={t.colors.hairline} style={{ marginTop: 2 }} />
+        </View>
         <View style={{ width: 44 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Avatar */}
-        <View style={styles.avatarWrap}>
-          <View style={[styles.avatar, { backgroundColor: t.colors.fill }]}>
-            <Text style={[styles.avatarText, { color: t.colors.fillInk }]}>{initials}</Text>
-          </View>
-          <Text style={[styles.email, { color: t.colors.inkSecondary }]}>{user?.email ?? ''}</Text>
-        </View>
+        {!user ? (
+          <ProfileSkeleton />
+        ) : (
+          <>
+            {/* Avatar */}
+            <View style={styles.avatarWrap}>
+              <View style={[styles.avatar, { backgroundColor: t.colors.fill }]}>
+                <Text style={[styles.avatarText, { color: t.colors.fillInk }]}>{initials}</Text>
+              </View>
+              <Text style={[styles.email, { color: t.colors.inkSecondary }]}>{user?.email ?? ''}</Text>
+            </View>
 
         {/* Editable fields */}
         <Text style={[styles.sectionTitle, { color: t.colors.inkSecondary }]}>Personal info</Text>
@@ -157,7 +166,7 @@ export default function ProfileScreen() {
                   <Text
                     style={[
                       styles.levelBtnText,
-                      { color: level === '0' ? t.colors.canvas : t.colors.inkSecondary },
+                      { color: level === l ? t.colors.canvas : t.colors.inkSecondary },
                       level === l && { color: t.colors.canvas },
                     ]}
                   >
@@ -177,6 +186,8 @@ export default function ProfileScreen() {
             style={styles.saveBtn}
           />
         )}
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -188,8 +199,8 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: theme.spacing[5],
+    paddingBottom: theme.spacing[2],
   },
   backBtn: {
     width: 44,
@@ -198,24 +209,25 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   backBtnText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: theme.typography.secondary,
+    fontWeight: theme.typography.medium,
     color: theme.colors.ink,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: theme.typography.display,
+    fontWeight: theme.typography.bold,
     color: theme.colors.ink,
+    letterSpacing: theme.typography.trackingDisplay,
   },
   content: {
-    padding: 16,
+    padding: theme.spacing[5],
     paddingBottom: 100,
-    gap: 10,
+    gap: theme.spacing[2.5],
   },
   avatarWrap: {
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    marginBottom: theme.spacing[2],
+    gap: theme.spacing[2],
   },
   avatar: {
     width: 64,
@@ -225,54 +237,55 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: theme.typography.title,
+    fontWeight: theme.typography.semibold,
   },
   email: {
-    fontSize: 14,
+    fontSize: theme.typography.secondary,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: theme.typography.caption,
+    fontWeight: theme.typography.semibold,
+    color: theme.colors.inkSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginBottom: 2,
-    marginTop: 8,
+    marginBottom: theme.spacing[0.5],
+    marginTop: theme.spacing[2],
   },
   card: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: theme.spacing[3],
+    paddingHorizontal: theme.spacing[3.5],
   },
   editRow: {
-    gap: 6,
+    gap: theme.spacing[1.5],
   },
   label: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: theme.typography.caption,
+    fontWeight: theme.typography.medium,
   },
   editInput: {
-    fontSize: 16,
+    fontSize: theme.typography.body,
     borderWidth: 0,
     padding: 0,
     margin: 0,
   },
   levelRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
+    gap: theme.spacing[2],
+    marginTop: theme.spacing[1],
   },
   levelBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: theme.spacing[3.5],
+    paddingVertical: theme.spacing[2],
     borderRadius: theme.radii.chip,
     borderWidth: 1,
     borderColor: theme.colors.hairline,
   },
   levelBtnText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: theme.typography.secondary,
+    fontWeight: theme.typography.medium,
   },
   saveBtn: {
-    marginTop: 8,
+    marginTop: theme.spacing[2],
   },
 });

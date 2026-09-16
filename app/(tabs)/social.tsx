@@ -1,5 +1,5 @@
 // Social / Course rooms — FR21, FR22, FR23, FR24
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Switch,
   Modal,
   Pressable,
+  RefreshControl,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -24,9 +25,11 @@ import { FormInput } from '@/components/Input';
 import { EmptyState } from '@/components/EmptyState';
 import { HeaderBar } from '@/components/HeaderBar';
 import { SideDrawer } from '@/components/SideDrawer';
+import { RoomsSkeleton } from '@/components/SkeletonLoader';
 import { useAuth } from '@/lib/auth';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GeoDots } from '@/components/neoBrutalist';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -37,6 +40,7 @@ export default function SocialScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   // Dock center action lands here with share=1 → open the sharing sheet
@@ -83,6 +87,13 @@ export default function SocialScreen() {
     return Object.fromEntries(userRooms.map((r: Doc<"courseRooms">) => [r.courseCode, r]));
   }, [userRooms]);
 
+  const isLoading = courses === undefined || userRooms === undefined;
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  }, []);
+
   const handleJoin = async () => {
     if (!joinCode.trim()) {
       Alert.alert('Enter course code', 'Type the course code to join its room.');
@@ -115,7 +126,10 @@ export default function SocialScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>Course Rooms</Text>
+          <View>
+            <Text style={styles.title}>Course Rooms</Text>
+            <GeoDots rows={1} cols={6} dotSize={3} gap={6} color={t.colors.hairline} style={{ marginTop: 4 }} />
+          </View>
           <HeaderBar
             onMenuPress={() => setDrawerOpen(true)}
             onSettingsPress={() => router.push('/(tabs)/settings')}
@@ -126,6 +140,7 @@ export default function SocialScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.colors.inkSecondary} />}
       >
         {/* Join room */}
         <View style={styles.joinSection}>
@@ -145,7 +160,9 @@ export default function SocialScreen() {
 
         {/* My rooms */}
         <Text style={styles.sectionTitle}>Your rooms</Text>
-        {(!courses || courses.length === 0) ? (
+        {isLoading ? (
+          <RoomsSkeleton />
+        ) : (!courses || courses.length === 0) ? (
           <EmptyState
             title="No courses yet"
             message="Add courses first, then join their rooms to connect with course-mates."
