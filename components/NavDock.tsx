@@ -110,6 +110,17 @@ function AssistantIcon({ active, ink, inkSecondary }: { active: boolean; ink: st
   );
 }
 
+function ProfileIcon({ active, ink, inkSecondary }: { active: boolean; ink: string; inkSecondary: string }) {
+  const sw = active ? SW_ACTIVE : SW_IDLE;
+  const color = active ? ink : inkSecondary;
+  return (
+    <Svg viewBox="0 0 24 24" width={22} height={22}>
+      <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth={sw} fill="none" />
+      <Path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke={color} strokeWidth={sw} strokeLinecap="round" fill="none" />
+    </Svg>
+  );
+}
+
 function FocusIcon({ active, ink, inkSecondary }: { active: boolean; ink: string; inkSecondary: string }) {
   const sw = active ? SW_ACTIVE : SW_IDLE;
   const color = active ? ink : inkSecondary;
@@ -179,6 +190,7 @@ const TABS = [
   { key: 'index', label: 'Home', route: '/(tabs)', match: (p: string) => p === '/' || p === '/(tabs)' || p === '/(tabs)/', Icon: HomeIcon },
   { key: 'deadlines', label: 'Deadlines', route: '/(tabs)/deadlines', match: (p: string) => p.includes('/deadlines'), Icon: FlagIcon },
   { key: 'assistant', label: 'Assistant', route: '/(tabs)/assistant', match: (p: string) => p.includes('/assistant'), Icon: AssistantIcon },
+  { key: 'profile', label: 'Profile', route: '/(tabs)/profile', match: (p: string) => p.includes('/profile'), Icon: ProfileIcon },
 ] as const;
 
 function getCenterSpec(pathname: string) {
