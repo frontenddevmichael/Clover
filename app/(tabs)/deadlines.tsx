@@ -113,7 +113,9 @@ export default function DeadlinesScreen() {
   const [selectedDeadlineId, setSelectedDeadlineId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fromDate = new Date().toISOString().split('T')[0];
+  const fromDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split('T')[0];
   const deadlines = useQuery(api.deadlines.listUpcoming, userId ? { userId, fromDate } : 'skip');
   const courses = useQuery(api.courses.listByUser, userId ? { userId } : 'skip');
   const notifPrefs = useQuery(api.notifications.getPreferences, userId ? { userId } : 'skip');
@@ -539,7 +541,7 @@ const makeStyles = (theme: Theme) => {
   dueRow: { flexDirection: 'row', alignItems: 'center', gap: c.spacing[2] },
   dueDate: { fontSize: c.typography.caption, color: c.neutral500, fontVariant: ['tabular-nums'] },
   dueDateUrgent: { color: c.workloadOverloaded },
-  dueDateOverdue: { color: c.overdue },
+  dueDateOverdue: { color: c.overdue, textDecorationLine: 'line-through' },
   dueBadge: {
     fontSize: c.typography.micro, fontWeight: c.typography.semibold, color: c.neutral500,
     backgroundColor: c.subtleFill, paddingHorizontal: c.spacing[2], paddingVertical: c.spacing[0.5], borderRadius: c.radii.pill,

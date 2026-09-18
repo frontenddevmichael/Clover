@@ -45,10 +45,11 @@ export default function FocusScreen() {
   const t = useTheme();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const { userId } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const todayStats = useQuery(
     api.focusSessions.todayStats,
@@ -70,34 +71,12 @@ export default function FocusScreen() {
 
   const totalSeconds = MODES.find((m) => m.key === selectedMode)!.minutes * 60;
 
-  // Timer tick
-  useEffect(() => {
-    if (!isActive) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
+  const isLoading = todayStats === undefined || todaySessions === undefined;
 
-    intervalRef.current = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          handleTimerComplete();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isActive]);
-
-  // Keep screen awake during focus sessions
-  useEffect(() => {
-    if (isActive && selectedMode === 'pomodoro') {
-      KeepAwake.activateKeepAwakeAsync('clover-focus').catch(() => {});
-    }
-  }, [isActive, selectedMode]);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  }, []);
 
   const handleTimerComplete = useCallback(async () => {
     setIsActive(false);
@@ -120,7 +99,36 @@ export default function FocusScreen() {
         ? 'Great focus session! Take a break.'
         : 'Break is over. Ready to focus?'
     );
-  }, [currentSessionId, selectedMode, completeSession]);
+  }, [currentSessionId, selectedMode, completeSession, toast]);
+
+  // Timer tick
+  useEffect(() => {
+    if (!isActive) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          handleTimerComplete();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isActive, handleTimerComplete]);
+
+  // Keep screen awake during focus sessions
+  useEffect(() => {
+    if (isActive && selectedMode === 'pomodoro') {
+      KeepAwake.activateKeepAwakeAsync('clover-focus').catch(() => {});
+    }
+  }, [isActive, selectedMode]);
 
   const handleStart = useCallback(async () => {
     if (!userId) return;
