@@ -1,6 +1,6 @@
 // Profile screen — edit name, institution, department, level.
 // Accessed from the SideDrawer profile section.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useMutation } from 'convex/react';
@@ -29,6 +29,7 @@ export default function ProfileScreen() {
   const [department, setDepartment] = useState('');
   const [level, setLevel] = useState('300');
   const [saving, setSaving] = useState(false);
+  const { logout } = useAuth();
 
   useEffect(() => {
     if (!user) return;
@@ -185,6 +186,48 @@ export default function ProfileScreen() {
             style={styles.saveBtn}
           />
         )}
+
+        {/* Account actions */}
+        <View style={styles.accountSection}>
+          <Button
+            label="Log out"
+            onPress={() => {
+              Alert.alert('Log out?', 'You will need to sign in again.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Log out', style: 'destructive', onPress: () => logout() },
+              ]);
+            }}
+            variant="secondary"
+          />
+          <Button
+            label="Delete account"
+            onPress={() => {
+              Alert.alert(
+                'Delete account?',
+                'This permanently removes all your data and cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        if (userId) {
+                          toast.success('Account deleted');
+                          await logout();
+                        }
+                      } catch {
+                        toast.error('Failed to delete account');
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+            variant="secondary"
+            style={{ borderColor: t.colors.workloadOverloaded }}
+          />
+        </View>
           </>
         )}
       </ScrollView>
@@ -286,5 +329,9 @@ const makeStyles = (theme: Theme) => StyleSheet.create({
   },
   saveBtn: {
     marginTop: theme.spacing[2],
+  },
+  accountSection: {
+    marginTop: theme.spacing[6],
+    gap: theme.spacing[3],
   },
 });

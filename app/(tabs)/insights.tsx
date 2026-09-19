@@ -1,6 +1,6 @@
 // Insights screen — analytics, charts, and productivity trends.
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, RefreshControl, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from 'convex/react';
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
@@ -139,12 +139,13 @@ export default function InsightsScreen() {
   const { userId } = useAuth();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [period, setPeriod] = useState<'7d' | '30d' | 'all'>('7d');
 
   const sessions = useQuery(api.sessions.listByUser, userId ? { userId } : 'skip');
   const courses = useQuery(api.courses.listByUser, userId ? { userId } : 'skip');
   const deadlines = useQuery(
     api.deadlines.listUpcoming,
-    userId ? { userId, fromDate: '2020-01-01' } : 'skip'
+    userId ? { userId, fromDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] } : 'skip'
   );
   const focusSessions = useQuery(
     api.focusSessions.listToday,
@@ -169,8 +170,9 @@ export default function InsightsScreen() {
 
   const dailyData = useMemo(() => {
     if (!sessions) return [];
-    return aggregateDailyMinutes(sessions, 7);
-  }, [sessions]);
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+    return aggregateDailyMinutes(sessions, days);
+  }, [sessions, period]);
 
   const courseData = useMemo(() => {
     if (!sessions || !courses) return [];
@@ -182,7 +184,11 @@ export default function InsightsScreen() {
     return aggregateWeeklyTrend(sessions);
   }, [sessions]);
 
-  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const dayLabels = period === '7d'
+    ? ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+    : period === '30d'
+    ? ['W1', 'W2', 'W3', 'W4']
+    : ['M', 'F', 'M', 'F', 'M', 'F', 'M', 'F', 'M', 'F', 'M', 'F', 'M'];
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -212,6 +218,31 @@ export default function InsightsScreen() {
           />
         ) : (
           <>
+            {/* Period selector */}
+            <View style={styles.periodRow}>
+              {(['7d', '30d', 'all'] as const).map((p) => (
+                <TouchableOpacity
+                  key={p}
+                  onPress={() => setPeriod(p)}
+                  style={[
+                    styles.periodBtn,
+                    period === p && { backgroundColor: t.colors.ink },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: period === p }}
+                >
+                  <Text
+                    style={[
+                      styles.periodBtnText,
+                      { color: period === p ? t.colors.canvas : t.colors.inkSecondary },
+                    ]}
+                  >
+                    {p === 'all' ? 'All time' : p.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             {/* Overview stats */}
         <Text style={styles.sectionTitle}>This Week</Text>
         <View style={styles.statsGrid}>
@@ -381,6 +412,22 @@ function makeStyles(t: Theme) {
       top: -8,
       left: 12,
       zIndex: 10,
+    },
+    periodRow: {
+      flexDirection: 'row',
+      gap: t.spacing[2],
+      marginBottom: t.spacing[4],
+    },
+    periodBtn: {
+      paddingHorizontal: t.spacing[3.5],
+      paddingVertical: t.spacing[2],
+      borderRadius: t.radii.chip,
+      borderWidth: 1,
+      borderColor: t.colors.hairline,
+    },
+    periodBtnText: {
+      fontSize: t.typography.secondary,
+      fontWeight: t.typography.medium,
     },
   });
 }

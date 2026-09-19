@@ -320,11 +320,11 @@ export default function FocusScreen() {
           Today
         </Text>
         {completedSessions.length === 0 ? (
-          <View style={{ paddingHorizontal: t.spacing[5], paddingVertical: t.spacing[3] }}>
-            <Text style={{ fontSize: t.typography.secondary, color: t.colors.inkSecondary, textAlign: 'center' }}>
-              No sessions yet — start a focus timer above
-            </Text>
-          </View>
+          <EmptyState
+            title="No sessions yet"
+            message="Start a focus timer above to track your first session"
+            scene="timer"
+          />
         ) : (
           <FlatList
             data={completedSessions}

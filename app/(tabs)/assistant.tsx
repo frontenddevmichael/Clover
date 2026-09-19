@@ -519,7 +519,7 @@ export default function AssistantScreen() {
         )}
 
         {/* Conversation history */}
-        {conversationHistory && conversationHistory.length > 0 && (
+        {conversationHistory && conversationHistory.length > 0 ? (
           <View style={styles.chatSection}>
             <View style={styles.chatHeader}>
               <Text style={styles.sectionLabel}>Conversation</Text>
@@ -546,8 +546,21 @@ export default function AssistantScreen() {
                 </Text>
               </View>
             ))}
+            {chatLoading && (
+              <View style={[styles.chatBubble, styles.chatBubbleAssistant, { backgroundColor: t.colors.elevated }]}>
+                <Text style={[styles.chatText, { color: t.colors.inkSecondary }]}>
+                  Thinking...
+                </Text>
+              </View>
+            )}
           </View>
-        )}
+        ) : !chatLoading ? (
+          <View style={styles.chatSection}>
+            <Text style={[styles.sectionLabel, { color: t.colors.inkSecondary, textAlign: 'center' }]}>
+              Ask me anything about your schedule
+            </Text>
+          </View>
+        ) : null}
 
         {/* Chat input */}
         <View style={styles.chatInputRow}>
